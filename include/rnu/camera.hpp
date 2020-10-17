@@ -10,6 +10,7 @@ namespace rnu {
         using float_type = Float;
 
         constexpr camera() = default;
+        constexpr camera(vec<float_type, 3> translation) : m_translation(translation) {};
 
         constexpr void axis(float_type delta_seconds, float_type f, float_type b, float_type l, float_type r, float_type u, float_type d) noexcept
         {
