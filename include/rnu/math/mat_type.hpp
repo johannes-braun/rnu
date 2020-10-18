@@ -68,7 +68,7 @@ namespace rnu
         [[nodiscard]] constexpr operator bool() noexcept
             requires std::same_as<T, bool>
         {
-            return std::any_of(data(), data() + size());
+            return std::any_of(data(), data() + size(), [](auto v) { return v; });
         }
 
     private:

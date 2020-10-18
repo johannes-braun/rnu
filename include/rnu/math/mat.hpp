@@ -57,7 +57,7 @@ namespace rnu
     }
     template<std::floating_point T>
     [[nodiscard]] constexpr auto scale(vec3_t<T> scales) noexcept {
-        mat4_t result;
+        mat4_t<T> result;
         result.at(0, 0) = scales.x;
         result.at(1, 1) = scales.y;
         result.at(2, 2) = scales.z;
