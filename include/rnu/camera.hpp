@@ -93,43 +93,23 @@ namespace rnu {
                 transpose_inplace(result);
             return result;
         }
-
-    private:
-       /* constexpr static void transpose(std::array<float_type, 16>& arr) noexcept
+        [[nodiscard]] constexpr static mat_type orthographic(float_type left, float_type right, float_type top, float_type bottom, float_type near, float_type far)
         {
-            for (int i = 0; i < 4; ++i)
-                for (int j = i; j < 4; ++j)
-                    std::swap(arr[j * 4 + i], arr[i * 4 + j]);
-        }*/
+            const auto rml = right - left;
+            const auto fmn = far - near;
+            const auto tmb = top - bottom;
 
-      /*  [[nodiscard]] constexpr static quat_type angle_axis(float_type radians, vec_type const& axis) noexcept
-        {
-            radians /= 2.0f;
-            const float_type rcos = cos(radians);
-            const float_type rsin = sin(radians);
-            return { rcos, axis[0] * rsin, axis[1] * rsin, axis[2] * rsin };
+            mat_type result;
+            result.at(0, 0) = 2 / rml;
+            result.at(1, 1) = 2 / tmb;
+            result.at(2, 2) = -2 / fmn;
+            result.at(3, 0) = -((right + left) / rml);
+            result.at(3, 1) = -((top + bottom) / tmb);
+            result.at(3, 2) = -((far + near) / fmn);
+            return result;
         }
 
-        [[nodiscard]] constexpr static vec_type rotate(vec_type const& v, quat_type const& quat)
-        {
-            constexpr auto vmul = [](auto scalar, vec_type vector) {
-                return vec_type{scalar* vector[0], scalar* vector[1], scalar* vector[2]};
-            };
-
-            auto const s = quat[0];
-            const vec_type u{ quat[1], quat[2], quat[3] };
-
-            const auto first = vmul(2 * dot(u, v), u);
-            const auto second = vmul(s * s - dot(u, u), v);
-            const auto third = vmul(2 * s, cross(u, v));
-
-            return {
-                first[0] + second[0] + third[0],
-                first[1] + second[1] + third[1],
-                first[2] + second[2] + third[2]
-            };
-        }*/
-
+    private:
         quat_type m_rotation{ 1.f, 0.f, 0.f, 0.f };
         vec_type m_translation{ 0.f, 0.f, 0.f };
         std::optional<float_type> m_last_x;
