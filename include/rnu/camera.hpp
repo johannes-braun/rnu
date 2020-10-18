@@ -109,6 +109,10 @@ namespace rnu {
             return result;
         }
 
+        [[nodiscard]] constexpr vec_type position() const noexcept {
+            return m_translation;
+        }
+
     private:
         quat_type m_rotation{ 1.f, 0.f, 0.f, 0.f };
         vec_type m_translation{ 0.f, 0.f, 0.f };
