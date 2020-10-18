@@ -1,3 +1,5 @@
+#include <algorithm>
+
 namespace rnu
 {
     template<matrix_type M> requires (M::cols == M::rows)
@@ -16,6 +18,22 @@ namespace rnu
             for (size_t r = 0; r < M::rows; ++r)
                 result.at(r, c) = m.at(c, r);
         return result;
+    }
+
+    template<matrix_type M>
+    [[nodiscard]] constexpr bool any_of(const M& m)
+    {
+        return std::any_of(m.data(), m.data() + m.size(), [](bool b) { return b; });
+    }
+    template<matrix_type M>
+    [[nodiscard]] constexpr bool all_of(const M& m)
+    {
+        return std::all_of(m.data(), m.data() + m.size(), [](bool b) { return b; });
+    }
+    template<matrix_type M>
+    [[nodiscard]] constexpr bool none_of(const M& m)
+    {
+        return std::none_of(m.data(), m.data() + m.size(), [](bool b) { return b; });
     }
 
     namespace detail

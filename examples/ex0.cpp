@@ -17,7 +17,7 @@ int main(int argc, char** argv)
     cam.projection(0, 0, 0, 0, 0);
 
     rnu::mat4 o;
-    o != o;
+    auto val = any_of(o != o);
 
     //   rnu::quat q = static_cast<rnu::quat>(rnu::quatd());
     //   q *= q;
