@@ -49,7 +49,7 @@ namespace rnu
     template<std::floating_point T>
     [[nodiscard]] constexpr auto translation(vec3_t<T> vector) noexcept {
         vec4 const hom(vector.x, vector.y, vector.z, 1);
-        return mat4_t<T>{ {}, {}, {}, hom };
+        return mat4_t<T>{ {1, 0, 0, 0}, { 0, 1, 0, 0 }, { 0, 0, 1, 0 }, hom };
     }
     template<std::floating_point T>
     [[nodiscard]] constexpr auto rotation(quat_t<T> quat) noexcept {
