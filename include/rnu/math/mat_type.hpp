@@ -25,6 +25,20 @@ namespace rnu
         [[nodiscard]] constexpr mat(std::initializer_list<T> values) noexcept;
         [[nodiscard]] constexpr mat(std::initializer_list<column_type> values) noexcept;
 
+        template<matrix_type Other>
+        [[nodiscard]] constexpr mat(Other const& other) noexcept
+            requires(Other::cols != cols || Other::rows != rows)
+            : mat()
+        {
+            for (size_t c = 0; c < std::min(cols, Other::cols); ++c)
+            {
+                for (size_t r = 0; r < std::min(rows, Other::rows); ++r)
+                {
+                    at(c, r) = other.at(c, r);
+                }
+            }
+        }
+
         template<vector_type V>
         [[nodiscard]] explicit constexpr mat(V v) noexcept
             requires(std::min(Cols, Rows) == 1 && std::max(Cols, Rows) == V::component_count)
