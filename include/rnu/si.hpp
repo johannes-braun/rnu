@@ -128,7 +128,7 @@ namespace rnu::units
                 : value(value) {}
 
             template<typename OtherFraction, typename OtherScalar>
-            constexpr unit_t(unit_t<Descriptor, OtherFraction, OtherScalar> other) : value((static_cast<scalar_type>(other.value) / Fraction::as<scalar_type>) * OtherFraction::as<scalar_type>) {
+            constexpr unit_t(unit_t<Descriptor, OtherFraction, OtherScalar> other) : value((static_cast<scalar_type>(other.value) / Fraction::template as<scalar_type>) * OtherFraction::template as<scalar_type>) {
 
             }
 
@@ -173,7 +173,7 @@ namespace rnu::units
             template<typename OtherFraction>
             friend constexpr auto operator+(unit_t lhs, unit_t<Descriptor, OtherFraction, scalar_type> rhs)
             {
-                constexpr auto factor = OtherFraction::as<scalar_type> / Fraction::as<scalar_type>;
+                constexpr auto factor = OtherFraction::template as<scalar_type> / Fraction::template as<scalar_type>;
                 return unit_t<Descriptor, Fraction, scalar_type>{
                     lhs.value + rhs.value * factor
                 };
@@ -181,7 +181,7 @@ namespace rnu::units
             template<typename OtherFraction>
             friend constexpr auto operator-(unit_t lhs, unit_t<Descriptor, OtherFraction, scalar_type> rhs)
             {
-                constexpr auto factor = OtherFraction::as<scalar_type> / Fraction::as<scalar_type>;
+                constexpr auto factor = OtherFraction::template as<scalar_type> / Fraction::template as<scalar_type>;
                 return unit_t<Descriptor, Fraction, scalar_type>{
                     lhs.value - rhs.value * factor
                 };

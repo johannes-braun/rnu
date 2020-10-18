@@ -2,6 +2,7 @@
 #include <array>
 #include <cmath>
 #include <type_traits>
+#include <numbers>
 
 #pragma warning(push)
 #pragma warning(disable : 5063)
