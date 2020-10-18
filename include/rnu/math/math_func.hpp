@@ -53,6 +53,14 @@ namespace rnu
         return val;
     }
 
+    template<scalar_type T>
+    [[nodiscard]] constexpr T radians(T deg) noexcept {
+        return deg / T(180) * std::numbers::pi_v<T>;
+    }
+    template<scalar_type T>
+    [[nodiscard]] constexpr T degrees(T rad) noexcept {
+        return rad * T(180) * std::numbers::inv_pi_v<T>;
+    }
 #undef vectorize_fun
 }
 #include "math_func.inl.hpp"
