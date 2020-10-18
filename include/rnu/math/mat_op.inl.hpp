@@ -33,6 +33,26 @@ namespace rnu {
     make_scalar_mat_ops(Op)\
     make_scalar_mat_assign_op(Op)
 
+#define make_mat_comparison_op(Op) \
+    template<matrix_type A, matrix_type B> \
+    requires (A::cols == B::cols && A::rows == B::rows) && requires(typename A::scalar_type a, typename B::scalar_type b) { {a Op b}; } \
+    [[nodiscard]] constexpr auto operator Op(A const& a, B const& b) \
+    { \
+        using result_value_type = \
+            decltype(std::declval<typename A::scalar_type>() Op std::declval<typename B::scalar_type>()); \
+        mat<result_value_type, A::cols, A::rows> result; \
+        apply_each<A::cols, A::rows>([&](size_t c, size_t r) { result.at(c, r) = a.at(c, r) Op b.at(c, r); }); \
+        return result; \
+    }
+    make_mat_comparison_op(!= )
+        make_mat_comparison_op(== )
+        make_mat_comparison_op(<= )
+        make_mat_comparison_op(>= )
+        make_mat_comparison_op(< )
+        make_mat_comparison_op(> )
+        make_mat_comparison_op(&&)
+        make_mat_comparison_op(||)
+
     make_both_scalar_mat_ops(+);
     make_both_scalar_mat_ops(-);
     make_both_scalar_mat_ops(*);
