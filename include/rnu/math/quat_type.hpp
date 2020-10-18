@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vec_type.hpp"
+#include "mat_type.hpp"
 #include "math_func.hpp"
 #include <array>
 #include <concepts>
@@ -38,6 +39,22 @@ namespace rnu {
         [[nodiscard]] constexpr quat_t(init_from_angleaxis, T w, vec<T, 3> xyz) : components{ w, xyz.x, xyz.y, xyz.z } {}
 
     public:
+        [[nodiscard]] constexpr mat<T, 3, 3> matrix() const noexcept {
+            const auto x2 = this->x * this->x;
+            const auto y2 = this->y * this->y;
+            const auto z2 = this->z * this->z;
+
+            const auto xy = this->x * this->y;
+            const auto xz = this->x * this->z;
+            const auto yz = this->y * this->z;
+            const auto wx = this->w * this->x;
+            const auto wy = this->w * this->y;
+            const auto wz = this->w * this->z;
+            return mat<T, 3, 3>(vec<T, 3>{1 - 2 * y2 - 2 * z2, 2 * xy - 2 * wz, 2 * xz + 2 * wy},
+                vec<T, 3>{2 * xy + 2 * wz, 1 - 2 * x2 - 2 * z2, 2 * xz - 2 * wx},
+                vec<T, 3>{2 * xz - 2 * wy, 2 * yz + 2 * wx, 1 - 2 * x2 - 2 * y2});
+        }
+
         template<typename T>
         [[nodiscard]] explicit constexpr operator quat_t<T>() noexcept {
             return quat_t<T>(
