@@ -16,7 +16,7 @@ namespace rnu {
     template<floating_point_vector V>
     [[nodiscard]] constexpr auto normalize(V a) noexcept
     {
-        return detail::apply_for_each(a, [inv_len = (1) / length(a)](const auto& val) { return val * inv_len; });
+        return detail::apply_for_each(a, [inv_len = (1) / norm(a)](const auto& val) { return val * inv_len; });
     }
     template<typename T>
     [[nodiscard]] constexpr auto cross(const vec<T, 3>& a, const vec<T, 3>& b) noexcept

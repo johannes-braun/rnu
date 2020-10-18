@@ -50,9 +50,9 @@ namespace rnu {
             const auto wx = this->w * this->x;
             const auto wy = this->w * this->y;
             const auto wz = this->w * this->z;
-            return mat<T, 3, 3>(vec<T, 3>{1 - 2 * y2 - 2 * z2, 2 * xy - 2 * wz, 2 * xz + 2 * wy},
+            return mat<T, 3, 3>{vec<T, 3>{1 - 2 * y2 - 2 * z2, 2 * xy - 2 * wz, 2 * xz + 2 * wy},
                 vec<T, 3>{2 * xy + 2 * wz, 1 - 2 * x2 - 2 * z2, 2 * xz - 2 * wx},
-                vec<T, 3>{2 * xz - 2 * wy, 2 * yz + 2 * wx, 1 - 2 * x2 - 2 * y2});
+                vec<T, 3>{2 * xz - 2 * wy, 2 * yz + 2 * wx, 1 - 2 * x2 - 2 * y2}};
         }
 
         template<typename T>
