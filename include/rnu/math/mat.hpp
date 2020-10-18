@@ -47,16 +47,16 @@ namespace rnu
     using mat4ui64 = mat4_t<std::uint64_t>;
 
     template<std::floating_point T>
-    [[noexcept]] constexpr auto translation(vec3_t<T> vector) noexcept {
+    [[nodiscard]] constexpr auto translation(vec3_t<T> vector) noexcept {
         vec4 const hom(vector.x, vector.y, vector.z, 1);
         return mat4_t<T>{ {}, {}, {}, hom };
     }
     template<std::floating_point T>
-    [[noexcept]] constexpr auto rotation(quat_t<T> quat) noexcept {
+    [[nodiscard]] constexpr auto rotation(quat_t<T> quat) noexcept {
         return mat4_t<T>(quat.matrix());
     }
     template<std::floating_point T>
-    [[noexcept]] constexpr auto scale(vec3_t<T> scales) noexcept {
+    [[nodiscard]] constexpr auto scale(vec3_t<T> scales) noexcept {
         mat4_t result;
         result.at(0, 0) = scales.x;
         result.at(1, 1) = scales.y;
