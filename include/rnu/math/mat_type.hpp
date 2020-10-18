@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <algorithm>
 #include "vec_type.hpp"
 
 namespace rnu
@@ -63,6 +64,12 @@ namespace rnu
         [[nodiscard]] constexpr T* data() noexcept;
         [[nodiscard]] constexpr T const* data() const noexcept;
         [[nodiscard]] constexpr size_type size() const noexcept;
+
+        [[nodiscard]] constexpr operator bool() noexcept
+            requires std::same_as<T, bool>
+        {
+            return std::any_of(data(), data() + size());
+        }
 
     private:
         void fill_diag(T value);
