@@ -1,23 +1,47 @@
-#include <rnu/math/vec.hpp>
-#include <rnu/math/quat.hpp>
-#include <rnu/math/mat.hpp>
-#include <rnu/camera.hpp>
+#include <rnu/math/math.hpp>
 #include <iostream>
 
-namespace rnu
-{
-}
+#include <functional>
+
 
 int main(int argc, char** argv)
 {
-    rnu::camera<float> cam;
+    using XX = rnu::reference_type<const rnu::vec3>;
+
+    rnu::vec3 vector;
+
+    rnu::mat4 mat;
+    rnu::mat4 mat2;
+    
+    rnu::element_wise([](float& f, float b) {
+        f += b;
+        }, mat, mat2);
+    auto x = rnu::element_wise([](float& f, float& fa) { return f += fa; }, vector, vector);
+
+    rnu::quat quatasd;
+    rnu::quatd d = rnu::element_wise([](float& r, float q) { 
+        r += q;
+        return double(r); }, quatasd, quatasd);
+
+    (vector + vector * vector - vector / vector) + 10;
+    vector + 5;
+    5 + vector;
+    vector += 210;
+
+    auto vav = vector == vector;
+
+    rnu::vec4i vack;
+    vack % 9;
+    --vack;
+
+    /*rnu::camera<float> cam;
     cam.axis(0, 0, 0, 0, 0, 0, 0);
     cam.matrix(true);
     cam.mouse(0, 0, 0);
     cam.projection(0, 0, 0, 0, 0);
 
     rnu::mat4 o;
-    auto val = any_of(o != o);
+    auto val = any_of(o != o);*/
 
     //   rnu::quat q = static_cast<rnu::quat>(rnu::quatd());
     //   q *= q;
