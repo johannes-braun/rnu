@@ -100,7 +100,7 @@ namespace rnu
     }
 
 
-    template<matrix_type M>
+    template<matrix_type M> requires (M::cols == M::rows)
     [[nodiscard]] constexpr M inverse(M m)
     {
         constexpr auto S = M::rows;
@@ -162,21 +162,19 @@ namespace rnu
                     if (row == col)
                     {
                         const auto inv_val = T(1.0 / mine.at(col, row));
-                        apply_each<S, 1>([&](size_t set_col, size_t)
-                            {
-                                inve.at(set_col, row) *= inv_val;
-                                mine.at(set_col, row) *= inv_val;
-                            });
+                        for (size_t set_col = 0; set_col < S; ++set_col) {
+                            inve.at(set_col, row) *= inv_val;
+                            mine.at(set_col, row) *= inv_val;
+                        }
                     }
                     else
                     {
                         if (const auto fac = mine.at(col, row))
                         {
-                            apply_each<S, 1>([&](size_t set_col, size_t)
-                                {
-                                    inve.at(set_col, row) -= fac * inve.at(set_col, col);
-                                    mine.at(set_col, row) -= fac * mine.at(set_col, col);
-                                });
+                            for (size_t set_col = 0; set_col < S; ++set_col) {
+                                inve.at(set_col, row) -= fac * inve.at(set_col, col);
+                                mine.at(set_col, row) -= fac * mine.at(set_col, col);
+                            }
                         }
                     }
                 }
@@ -190,11 +188,10 @@ namespace rnu
 
                     if (const auto fac = mine.at(col, row))
                     {
-                        apply_each<S, 1>([&](size_t set_col, size_t)
-                            {
-                                inve.at(set_col, row) -= fac * inve.at(set_col, col);
-                                mine.at(set_col, row) -= fac * mine.at(set_col, col);
-                            });
+                        for (size_t set_col = 0; set_col < S; ++set_col) {
+                            inve.at(set_col, row) -= fac * inve.at(set_col, col);
+                            mine.at(set_col, row) -= fac * mine.at(set_col, col);
+                        }
                     }
                 }
             }

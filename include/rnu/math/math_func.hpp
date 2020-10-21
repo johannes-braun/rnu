@@ -1,5 +1,6 @@
 #pragma once
 #include "vec_type.hpp"
+#include "operators.hpp"
 #include <cmath>
 #include <algorithm>
 #include <numbers>
@@ -24,11 +25,11 @@ namespace rnu
 #define vectorize_fun(Name, Typename) \
     template<Typename T> \
     [[nodiscard]] constexpr auto Name(T val) noexcept(noexcept(Name<typename T::value_type>(typename T::value_type{}))) \
-    { return detail::apply_for_each(val, &Name<typename T::value_type>); }
+    { return element_wise(&Name<typename T::value_type>, val); }
 #define vectorize_fun2(Name, Typename) \
     template<Typename T> \
     [[nodiscard]] constexpr auto Name(T val, T val2) noexcept(noexcept(Name<typename T::value_type>(typename T::value_type{}, typename T::value_type{}))) \
-    { return detail::apply_for_each(val, val2, &Name<typename T::value_type>); }
+    { return element_wise(&Name<typename T::value_type>, val, val2); }
 
     vectorize_fun(sqrt, floating_point_vector);
     vectorize_fun(cos, floating_point_vector);

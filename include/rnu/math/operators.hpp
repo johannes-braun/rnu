@@ -75,71 +75,78 @@ namespace rnu
     constexpr auto element_wise(NAryFun&& fun, MatrixTypes&&... matrices) {
 
         using return_value_type = std::invoke_result_t<NAryFun, reference_type<MatrixTypes>...>;
-
         if constexpr (std::is_same_v<return_value_type, void>)
         {
-            constexpr auto make_result = []<size_t... el>(MatrixTypes &&... matrices, auto && fun, std::index_sequence<el...>) {
-                constexpr auto set_at = [](size_t index, MatrixTypes &&... matrices, auto&& fun) {
-                    using h = head_t<MatrixTypes...>;
-                    return fun(matrices.at(index / h::rows, index % h::rows)...); };
-                constexpr auto rs = head_t<MatrixTypes...>::rows;
-                (set_at(el, std::forward<MatrixTypes>(matrices)..., fun), ...);
+            constexpr auto make_result = []<size_t... i>(MatrixTypes&&... matrices, auto && fun, std::index_sequence<i...>) {
+                constexpr auto set_at = [](size_t index, MatrixTypes&&... matrices, auto&& fun) { fun(matrices.element(index)...); };
+                (set_at(i, std::forward<MatrixTypes>(matrices)..., fun), ...);
             };
+
             make_result(std::forward<MatrixTypes>(matrices)..., std::forward<NAryFun>(fun),
                 std::make_index_sequence<head_t<MatrixTypes...>::cols* head_t<MatrixTypes...>::rows>());
         }
         else
         {
-            constexpr auto make_result = []<size_t... el>(MatrixTypes &&... matrices, auto && fun, std::index_sequence<el...>) {
-                constexpr auto set_at = [](size_t index, MatrixTypes &&... matrices, auto&& fun) {
-                    using h = head_t<MatrixTypes...>;
-                    return fun(matrices.at(index / h::rows, index % h::rows)...); };
-                constexpr auto rs = head_t<MatrixTypes...>::rows;
-                return mat<return_value_type, head_t<MatrixTypes...>::cols, head_t<MatrixTypes...>::rows>{
-                    set_at(el, std::forward<MatrixTypes>(matrices)..., fun)...
-                };
+            constexpr auto make_result = []<size_t... i>(MatrixTypes&&... matrices, auto && fun, std::index_sequence<i...>) {
+                constexpr auto set_at = [](size_t index, MatrixTypes&&... matrices, auto&& fun) { return fun(matrices.element(index)...); };
+                return mat<return_value_type, head_t<MatrixTypes...>::cols, head_t<MatrixTypes...>::rows>(
+                    set_at(i, std::forward<MatrixTypes>(matrices)..., fun)...
+                    );
             };
+
             return make_result(std::forward<MatrixTypes>(matrices)..., std::forward<NAryFun>(fun),
                 std::make_index_sequence<head_t<MatrixTypes...>::cols* head_t<MatrixTypes...>::rows>());
         }
     }
 
-    #define def_op_callable(Name, Op) \
+    template<size_t C, size_t R, typename Fun, size_t... Cs, size_t ... Rs>
+    constexpr void index_wise_impl(Fun&& fun, std::index_sequence<Cs...>, std::index_sequence<Rs...>)
+    {
+        size_t col; ((col = Cs, (fun(col, Rs), ...)), ...);
+    }
+
+    template<size_t C, size_t R, typename Fun>
+    constexpr void index_wise(Fun&& fun)
+    {
+        return index_wise_impl<C, R>(std::forward<Fun>(fun), std::make_index_sequence<C>(), std::make_index_sequence<R>());
+    }
+
+    #define define_binary_const_callable(Name, Op) \
     template<typename Lhs, typename Rhs = Lhs> requires requires{ {std::declval<Lhs>() Op std::declval<Rhs>()}; } \
     struct Name { \
         [[nodiscard]] constexpr auto operator()(Lhs const& lhs, Rhs const& rhs) const noexcept(noexcept(std::declval<Lhs>() Op std::declval<Rhs>())) \
         { return lhs Op rhs; } \
     };
-#define def_const_prefix_callable(Name, Op) \
+#define define_unary_const_callable(Name, Op) \
     template<typename Lhs> requires requires{ {Op std::declval<Lhs>()}; } \
     struct Name { \
         [[nodiscard]] constexpr auto operator()(Lhs const& lhs) const noexcept(noexcept(Op std::declval<Lhs>())) \
         { return Op lhs; } \
     };
 
-    def_op_callable(plus, +);
-    def_op_callable(minus, -);
-    def_op_callable(multiplies, *);
-    def_op_callable(divides, /);
-    def_op_callable(modulus, %);
-    def_const_prefix_callable(negate, -);
-    def_op_callable(equal_to, ==);
-    def_op_callable(not_equal_to, !=);
-    def_op_callable(greater, >);
-    def_op_callable(less, <);
-    def_op_callable(greater_equal, >=);
-    def_op_callable(less_equal, <=);
-    def_op_callable(bit_shl, <<);
-    def_op_callable(bit_shr, >>);
-    def_op_callable(bit_and, &);
-    def_op_callable(bit_or, |);
-    def_op_callable(bit_xor, ^);
-    def_const_prefix_callable(bit_not, ~);
-    def_op_callable(logical_and, &&);
-    def_op_callable(logical_or, ||);
-    def_const_prefix_callable(logical_not, !);
-#undef def_op_callable
-#undef def_const_prefix_callable
+    define_binary_const_callable(plus, +);
+    define_binary_const_callable(minus, -);
+    define_binary_const_callable(multiplies, *);
+    define_binary_const_callable(divides, /);
+    define_binary_const_callable(modulus, %);
+    define_unary_const_callable(negate, -);
+    define_binary_const_callable(equal_to, ==);
+    define_binary_const_callable(not_equal_to, !=);
+    define_binary_const_callable(greater, >);
+    define_binary_const_callable(less, <);
+    define_binary_const_callable(greater_equal, >=);
+    define_binary_const_callable(less_equal, <=);
+    define_binary_const_callable(bit_shl, <<);
+    define_binary_const_callable(bit_shr, >>);
+    define_binary_const_callable(bit_and, &);
+    define_binary_const_callable(bit_or, |);
+    define_binary_const_callable(bit_xor, ^);
+    define_unary_const_callable(bit_not, ~);
+    define_binary_const_callable(logical_and, &&);
+    define_binary_const_callable(logical_or, ||);
+    define_unary_const_callable(logical_not, !);
+#undef define_binary_const_callable
+#undef define_unary_const_callable
 
     template<typename Lhs, typename Rhs> concept vector_and_scalar = vector_type<Lhs> && scalar_type<Rhs>;
     template<typename Lhs, typename Rhs> concept scalar_and_vector = scalar_type<Lhs> && vector_type<Rhs>;
@@ -154,7 +161,7 @@ namespace rnu
         requires{ Fun<scalar_type_of_t<Lhs>, scalar_type_of_t<Rhs>>{}; };
 
     template<template<typename...> typename Fun, typename Lhs, typename Rhs> requires callable_exists<Lhs, Rhs, Fun>
-            constexpr auto operator_fun(Lhs const& lhs, Rhs const& rhs) noexcept
+    constexpr auto operator_fun(Lhs const& lhs, Rhs const& rhs) noexcept
     {
         const Fun<scalar_type_of_t<Lhs>, scalar_type_of_t<Rhs>> fun{};
         if constexpr (vector_and_vector<Lhs, Rhs>)
@@ -167,12 +174,11 @@ namespace rnu
             static_assert(false, "Detected missing case!");
     }
     template<template<typename...> typename Fun, typename Lhs, typename Rhs> requires assignment_callable_exists<Lhs, Rhs, plus>
-        constexpr Lhs& operator_assign_fun(Lhs& lhs, Rhs const& rhs) noexcept
+    constexpr Lhs& operator_assign_fun(Lhs& lhs, Rhs const& rhs) noexcept
     {
         lhs = operator_fun<Fun>(lhs, rhs);
         return lhs;
     }
-
     template<template<typename...> typename Fun, typename Lhs> requires callable_exists_unary<Lhs, Fun>
     constexpr auto const_operator_fun(Lhs const& lhs) noexcept
     {
@@ -256,3 +262,4 @@ namespace rnu
     template<vector_type V> requires requires(typename V::value_type v) { {v--}; }
     [[nodiscard]] constexpr V operator--(V& v, int) noexcept { V result = v; element_wise([=](auto& vv) {return vv--; }, v); return result; }
 }
+#include "mat_op.inl.hpp"

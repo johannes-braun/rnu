@@ -1,8 +1,7 @@
 #include <rnu/math/math.hpp>
 #include <iostream>
-
+#include <chrono>
 #include <functional>
-
 
 int main(int argc, char** argv)
 {
@@ -10,11 +9,15 @@ int main(int argc, char** argv)
 
     rnu::vec3 vector;
 
-    rnu::mat4 mat;
-    rnu::mat4 mat2;
+    rnu::mat2 mat;
+    rnu::mat2 mat2;
+    rnu::mat2i mat32;
+    mat32 << 1;
     
-    rnu::element_wise([](float& f, float b) {
-        f += b;
+    rnu::mat2 matrix(1, 2, 20.f, 234);
+
+    mat = rnu::element_wise([](float f, float b) {
+        return f + b;
         }, mat, mat2);
     auto x = rnu::element_wise([](float& f, float& fa) { return f += fa; }, vector, vector);
 
@@ -29,10 +32,39 @@ int main(int argc, char** argv)
     vector += 210;
 
     auto vav = vector == vector;
+    {
+        std::vector<rnu::mat2> vectors(100000);
+        std::generate(vectors.begin(), vectors.end(), [] { return rnu::mat2{ float(rand()), float(rand()), float(rand()), float(rand()) }; });
+        auto start = std::chrono::steady_clock::now();
+        for (size_t i = 0; i < 100000; ++i)
+        {
+            float faf[4];
+            faf[0] = vectors[i].at(0, 0) + vectors[i].at(0, 0);
+            faf[1] = vectors[i].at(0, 1) + vectors[i].at(0, 1);
+            faf[2] = vectors[i].at(1, 0) + vectors[i].at(1, 0);
+            faf[3] = vectors[i].at(1, 1) + vectors[i].at(1, 1);
+            vectors[i].at(0, 0) = faf[0];
+            vectors[i].at(0, 1) = faf[1];
+            vectors[i].at(1, 0) = faf[2];
+            vectors[i].at(1, 1) = faf[3];
+        }
+        std::cout << "Time: " << (std::chrono::steady_clock::now() - start).count() << " nanos\n";
+    }
 
-    rnu::vec4i vack;
-    vack % 9;
-    --vack;
+    {
+        std::vector<rnu::mat2> vectors(100000);
+        std::generate(vectors.begin(), vectors.end(), [] { return rnu::mat2{ float(rand()), float(rand()), float(rand()), float(rand()) }; });
+        auto start = std::chrono::steady_clock::now();
+        for (size_t i = 0; i < 100000; ++i)
+        {
+            vectors[i] = rnu::element_wise([](float a) { return a + a; }, vectors[i]);
+        }
+        std::cout << "Time: " << (std::chrono::steady_clock::now() - start).count() << " nanos\n";
+    }
+
+    //rnu::vec4i vack;
+    //vack % 9;
+    //--vack;
 
     /*rnu::camera<float> cam;
     cam.axis(0, 0, 0, 0, 0, 0, 0);

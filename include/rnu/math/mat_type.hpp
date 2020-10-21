@@ -21,9 +21,16 @@ namespace rnu
         using const_pointer = const T*;
         using scalar_type = scalar_type_of_t<value_type>;
         using column_type = vec<T, Rows>;
+        
+        template<typename... ScalarList>
+        constexpr static bool scalars_compatible = (sizeof...(ScalarList) == Cols * Rows) &&
+            (std::is_convertible_v<ScalarList, value_type> && ...);
 
         [[nodiscard]] constexpr mat() noexcept;
-        [[nodiscard]] constexpr mat(std::initializer_list<T> values) noexcept;
+        
+        template<typename... Scalars> requires scalars_compatible<Scalars...>
+        [[nodiscard]] constexpr mat(Scalars&&... scalars);
+
         [[nodiscard]] constexpr mat(std::initializer_list<column_type> values) noexcept;
 
         template<matrix_type Other>
@@ -60,6 +67,10 @@ namespace rnu
 
         [[nodiscard]] constexpr T& at(size_t col, size_t row);
         [[nodiscard]] constexpr T const& at(size_t col, size_t row) const;
+        [[nodiscard]] constexpr value_type& element(size_t linear_index);
+        [[nodiscard]] constexpr value_type const& element(size_t linear_index) const;
+        [[nodiscard]] constexpr column_type& col(size_t col);
+        [[nodiscard]] constexpr column_type const& col(size_t col, size_t row) const;
 
         [[nodiscard]] constexpr T* data() noexcept;
         [[nodiscard]] constexpr T const* data() const noexcept;
@@ -74,7 +85,10 @@ namespace rnu
     private:
         void fill_diag(T value);
 
-        std::array<column_type, Cols> m_data{};
+        union {
+            std::array<column_type, Cols> m_data{};
+            std::array<value_type, Cols* Rows> m_linear_data;
+        };
     };
 
 
@@ -87,6 +101,26 @@ namespace rnu
     constexpr T const& mat<T, Cols, Rows>::at(size_t col, size_t row) const
     {
         return m_data[col][row];
+    }
+    template<typename T, size_t Cols, size_t Rows>
+    constexpr typename mat<T, Cols, Rows>::column_type& mat<T, Cols, Rows>::col(size_t col)
+    {
+        return m_data[col];
+    }
+    template<typename T, size_t Cols, size_t Rows>
+    constexpr typename mat<T, Cols, Rows>::column_type const& mat<T, Cols, Rows>::col(size_t col, size_t row) const
+    {
+        return m_data[col];
+    }
+    template<typename T, size_t Cols, size_t Rows>
+    constexpr typename mat<T, Cols, Rows>::value_type& mat<T, Cols, Rows>::element(size_t linear_index)
+    {
+        return m_linear_data[linear_index];
+    }
+    template<typename T, size_t Cols, size_t Rows>
+    constexpr typename mat<T, Cols, Rows>::value_type const& mat<T, Cols, Rows>::element(size_t linear_index) const
+    {
+        return m_linear_data[linear_index];
     }
 
     template<typename T, size_t Cols, size_t Rows>
@@ -119,19 +153,15 @@ namespace rnu
     {
         fill_diag(T(1));
     }
-    template<typename T, size_t Cols, size_t Rows>
-    constexpr mat<T, Cols, Rows>::mat(std::initializer_list<T> values) noexcept
-    {
-        T* output = data();
-        auto iter = std::begin(values);
 
-        auto values_end = std::end(values);
-        auto output_end = data() + size();
-        while (iter != values_end && output != output_end)
-        {
-            *(output++) = *(iter++);
-        }
+    template<typename T, size_t Cols, size_t Rows>
+    template<typename... Scalars> requires mat<T, Cols, Rows>::scalars_compatible<Scalars...>
+    constexpr mat<T, Cols, Rows>::mat(Scalars&&... scalars)
+        : m_linear_data{static_cast<value_type>(scalars)...}
+    {
+
     }
+
     template<typename T, size_t Cols, size_t Rows>
     constexpr mat<T, Cols, Rows>::mat(std::initializer_list<column_type> values) noexcept
     {
@@ -148,5 +178,4 @@ namespace rnu
 }
 
 #include "mat_apply.inl.hpp"
-#include "mat_op.inl.hpp"
 #include "mat_math.inl.hpp"

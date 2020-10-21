@@ -8,7 +8,7 @@ namespace rnu {
         using result_value_type = \
             decltype(std::declval<typename M::scalar_type>() Op std::declval<S>()); \
         mat<result_value_type, M::cols, M::rows> result; \
-        apply_each<M::cols, M::rows>([&](size_t c, size_t r) { result.at(c, r) = a.at(c, r) Op b; }); \
+        index_wise<M::cols, M::rows>([&](size_t c, size_t r) { result.at(c, r) = a.at(c, r) Op b; }); \
         return result; \
     } \
     template<matrix_type M, scalar_type S> \
@@ -17,7 +17,7 @@ namespace rnu {
         using result_value_type = \
             decltype(std::declval<S>() Op std::declval<typename M::scalar_type>()); \
         mat<result_value_type, M::cols, M::rows> result; \
-        apply_each<M::cols, M::rows>([&](size_t c, size_t r) { result.at(c, r) = a Op b.at(c, r); }); \
+        index_wise<M::cols, M::rows>([&](size_t c, size_t r) { result.at(c, r) = a Op b.at(c, r); }); \
         return result; \
     }
 
@@ -25,7 +25,7 @@ namespace rnu {
     template<matrix_type M, scalar_type S>\
     requires requires(typename M::scalar_type a, S b) { {a Op##= b}; }\
     [[nodiscard]] constexpr decltype(auto) operator Op##=(M& a, S const& b) {\
-        apply_each<M::cols, M::rows>([&](size_t c, size_t r) { a.at(c, r) Op##= b; });\
+        index_wise<M::cols, M::rows>([&](size_t c, size_t r) { a.at(c, r) Op##= b; });\
         return a;\
     }
 
@@ -41,7 +41,7 @@ namespace rnu {
         using result_value_type = \
             decltype(std::declval<typename A::scalar_type>() Op std::declval<typename B::scalar_type>()); \
         mat<result_value_type, A::cols, A::rows> result; \
-        apply_each<A::cols, A::rows>([&](size_t c, size_t r) { result.at(c, r) = a.at(c, r) Op b.at(c, r); }); \
+        index_wise<A::cols, A::rows>([&](size_t c, size_t r) { result.at(c, r) = a.at(c, r) Op b.at(c, r); }); \
         return result; \
     }
     make_mat_comparison_op(!= )
@@ -79,7 +79,7 @@ namespace rnu {
         using result_scalar_type = decltype(typename Lhs::scalar_type{} *typename Rhs::scalar_type{});
 
         mat<result_scalar_type, Rhs::cols, Lhs::rows> result;
-        apply_each<Rhs::cols, Lhs::rows>([&](size_t c, size_t r) {
+        index_wise<Rhs::cols, Lhs::rows>([&](size_t c, size_t r) {
             result.at(c, r) = 0;
             for (size_t i = 0; i < Lhs::cols; ++i) { result.at(c, r) += a.at(i, r) * b.at(c, i); }
             });
@@ -90,7 +90,7 @@ namespace rnu {
         constexpr decltype(auto) operator*=(Lhs& a, const Rhs& b) noexcept
     {
         Lhs result;
-        apply_each<Rhs::cols, Lhs::rows>([&](size_t c, size_t r) {
+        index_wise<Rhs::cols, Lhs::rows>([&](size_t c, size_t r) {
             result.at(c, r) = 0;
             for (size_t i = 0; i < Lhs::cols; ++i) { result.at(c, r) += a.at(i, r) * b.at(c, i); }
             });
@@ -104,7 +104,7 @@ namespace rnu {
         using result_scalar_type = decltype(typename Lhs::scalar_type{} *typename Rhs::scalar_type{});
 
         vec<result_scalar_type, Rhs::component_count> result;
-        apply_each<1, Lhs::rows>([&](size_t c, size_t r) {
+        index_wise<1, Lhs::rows>([&](size_t c, size_t r) {
             result.at(r) = 0;
             for (size_t i = 0; i < Lhs::cols; ++i) { result.at(r) += a.at(i, r) * b.at(i); }
             });
@@ -116,7 +116,7 @@ namespace rnu {
         using result_value_type =
             decltype(~std::declval<typename M::value_type>());
         mat<result_value_type, M::cols, M::rows> result;
-        apply_each<M::cols, M::rows>([&](size_t c, size_t r) { result.at(c, r) = ~a.at(c, r); });
+        index_wise<M::cols, M::rows>([&](size_t c, size_t r) { result.at(c, r) = ~a.at(c, r); });
         return result;
     }
     template<matrix_type M>
@@ -125,7 +125,7 @@ namespace rnu {
         using result_value_type =
             decltype(~std::declval<typename M::value_type>());
         mat<result_value_type, M::cols, M::rows> result;
-        apply_each<M::cols, M::rows>([&](size_t c, size_t r) { result.at(c, r) = !a.at(c, r); });
+        index_wise<M::cols, M::rows>([&](size_t c, size_t r) { result.at(c, r) = !a.at(c, r); });
         return result;
     }
     template<matrix_type M>
@@ -134,7 +134,7 @@ namespace rnu {
         using result_value_type =
             decltype(~std::declval<typename M::value_type>());
         mat<result_value_type, M::cols, M::rows> result;
-        apply_each<M::cols, M::rows>([&](size_t c, size_t r) { result.at(c, r) = -a.at(c, r); });
+        index_wise<M::cols, M::rows>([&](size_t c, size_t r) { result.at(c, r) = -a.at(c, r); });
         return result;
     }
     template<matrix_type M>
@@ -143,33 +143,33 @@ namespace rnu {
         using result_value_type =
             decltype(~std::declval<typename M::value_type>());
         mat<result_value_type, M::cols, M::rows> result;
-        apply_each<M::cols, M::rows>([&](size_t c, size_t r) { result.at(c, r) = +a.at(c, r); });
+        index_wise<M::cols, M::rows>([&](size_t c, size_t r) { result.at(c, r) = +a.at(c, r); });
         return result;
     }
     template<matrix_type M>
     requires requires(typename M::value_type a) { {++a}; }
     constexpr M& operator++(M& a) {
-        apply_each<M::cols, M::rows>([&](size_t c, size_t r) { ++a.at(c, r); });
+        index_wise<M::cols, M::rows>([&](size_t c, size_t r) { ++a.at(c, r); });
         return a;
     }
     template<matrix_type M>
     requires requires(typename M::value_type a) { {--a}; }
     constexpr M& operator--(M& a) {
-        apply_each<M::cols, M::rows>([&](size_t c, size_t r) { --a.at(c, r); });
+        index_wise<M::cols, M::rows>([&](size_t c, size_t r) { --a.at(c, r); });
         return a;
     }
     template<matrix_type M>
     requires requires(typename M::value_type a) { {a++}; }
     [[nodiscard]] constexpr M operator++(M& a, int) {
         M result = a;
-        apply_each<M::cols, M::rows>([&](size_t c, size_t r) { a.at(c, r)++; });
+        index_wise<M::cols, M::rows>([&](size_t c, size_t r) { a.at(c, r)++; });
         return result;
     }
     template<matrix_type M>
     requires requires(typename M::value_type a) { {a--}; }
     [[nodiscard]] constexpr M operator--(M& a, int) {
         M result = a;
-        apply_each<M::cols, M::rows>([&](size_t c, size_t r) { a.at(c, r)--; });
+        index_wise<M::cols, M::rows>([&](size_t c, size_t r) { a.at(c, r)--; });
         return result;
     }
 }
