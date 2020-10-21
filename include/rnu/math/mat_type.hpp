@@ -29,7 +29,11 @@ namespace rnu
         [[nodiscard]] constexpr mat() noexcept;
         
         template<typename... Scalars> requires scalars_compatible<Scalars...>
-        [[nodiscard]] constexpr mat(Scalars&&... scalars);
+        [[nodiscard]] constexpr mat(Scalars&&... scalars)
+            : m_linear_data{ static_cast<value_type>(scalars)... }
+        {
+
+        }
 
         [[nodiscard]] constexpr mat(std::initializer_list<column_type> values) noexcept;
 
@@ -152,14 +156,6 @@ namespace rnu
     constexpr mat<T, Cols, Rows>::mat() noexcept
     {
         fill_diag(T(1));
-    }
-
-    template<typename T, size_t Cols, size_t Rows>
-    template<typename... Scalars> requires mat<T, Cols, Rows>::scalars_compatible<Scalars...>
-    constexpr mat<T, Cols, Rows>::mat(Scalars&&... scalars)
-        : m_linear_data{static_cast<value_type>(scalars)...}
-    {
-
     }
 
     template<typename T, size_t Cols, size_t Rows>

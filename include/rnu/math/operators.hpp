@@ -182,6 +182,7 @@ namespace rnu
     template<template<typename...> typename Fun, typename Lhs> requires callable_exists_unary<Lhs, Fun>
     constexpr auto const_operator_fun(Lhs const& lhs) noexcept
     {
+        const Fun<scalar_type_of_t<Lhs>> fun{};
         return element_wise([&](auto aa) {return fun(aa); }, lhs);
     }
 

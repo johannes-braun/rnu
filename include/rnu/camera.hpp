@@ -81,7 +81,7 @@ namespace rnu {
             const float_type range = far - near;
             const float_type invtan = static_cast<float_type>(1.0 / tan(theta));
 
-            mat_type result{ 0 };
+            mat_type result;
             result.at(0, 0) = invtan / aspect;
             result.at(1, 1) = invtan;
             result.at(2, 2) = -(near + far) / range;
