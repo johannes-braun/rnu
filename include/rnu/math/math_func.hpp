@@ -10,6 +10,7 @@
 
 namespace rnu 
 {
+    template<scalar_type T> [[nodiscard]] constexpr T abs(T value) noexcept;
     template<std::floating_point T> [[nodiscard]] constexpr T sqrt(T value) noexcept;
     template<std::floating_point T> [[nodiscard]] constexpr T cos(T val) noexcept;
     template<std::floating_point T> [[nodiscard]] constexpr T sin(T val) noexcept;
@@ -39,6 +40,7 @@ namespace rnu
     vectorize_fun(isinf, floating_point_vector);
     vectorize_fun(real, floating_point_vector);
     vectorize_fun(imag, floating_point_vector);
+    vectorize_fun(abs, vector_type);
 
     vectorize_fun2(max, vector_type);
     vectorize_fun2(min, vector_type);

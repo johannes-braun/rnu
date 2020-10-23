@@ -159,7 +159,8 @@ namespace rnu {
         template<typename X, typename = std::enable_if_t<std::is_convertible_v<X, T>>>
         explicit constexpr vec(X* ptr);
         explicit constexpr vec(T&& value) noexcept;
-        template<typename... Ts, typename = std::enable_if_t<S == sizeof...(Ts) && (S > 1)>>
+        template<typename... Ts> requires (S > 1 && S == sizeof...(Ts)) && 
+            (std::is_convertible_v<Ts, T> && ...)
         explicit constexpr vec(Ts&&... ts) noexcept;
 
     private:
@@ -185,6 +186,14 @@ namespace rnu {
         constexpr operator const vec_tuple_t<vec>& () noexcept { return reinterpret_cast<const vec_tuple_t<vec>&>(*this); }
         constexpr vec_tuple_t<vec>& tuple() noexcept { return reinterpret_cast<vec_tuple_t<vec>&>(*this); }
         constexpr const vec_tuple_t<vec>& tuple() const noexcept { return reinterpret_cast<vec_tuple_t<vec>&>(*this); }
+
+        [[nodiscard]] constexpr operator bool() const noexcept
+            requires std::same_as<T, bool>
+        {
+            for (size_t i = 0; i < component_count; ++i)
+                if (!at(i)) return false;
+            return true;
+        }
 
     private:
         template<std::size_t... Is>

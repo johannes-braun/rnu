@@ -10,3 +10,5 @@ option(RNU_BUILD_EXAMPLES "Build example executables." OFF)
 if(RNU_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif(RNU_BUILD_EXAMPLES)
+
+add_subdirectory(tests)

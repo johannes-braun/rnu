@@ -5,6 +5,11 @@
 
 namespace rnu
 {
+    template<scalar_type T>
+    constexpr T abs(T value) noexcept
+    {
+        return value < 0 ? -value : value;
+    }
     template<std::floating_point T>
     [[nodiscard]] constexpr T sqrt(T value) noexcept
     {

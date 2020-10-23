@@ -12,7 +12,8 @@ namespace rnu {
 
     template<typename T, size_t S>
     template<typename X, std::size_t... Is>
-    constexpr vec<T, S>::vec(std::index_sequence<Is...>, const X* other) noexcept : detail::vec_components<T, S>{ static_cast<T>(other[Is])... }
+    constexpr vec<T, S>::vec(std::index_sequence<Is...>, const X* other) noexcept 
+        : detail::vec_components<T, S>{ static_cast<T>(other[Is])... }
     {}
 
     template<typename T, size_t S>
@@ -39,7 +40,7 @@ namespace rnu {
     {}
 
     template<typename T, size_t S>
-    template<typename... Ts, typename>
+    template<typename... Ts> requires (S > 1 && S == sizeof...(Ts)) && (std::is_convertible_v<Ts, T> && ...)
     constexpr vec<T, S>::vec(Ts&&... ts) noexcept : detail::vec_components<T, S>{ static_cast<value_type>(ts)... }
     {}
 
