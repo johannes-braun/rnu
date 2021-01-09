@@ -45,28 +45,44 @@ namespace rnu
         }
     }
 
-    template<typename... VectorTypes, typename NAryFun>
-    requires (vector_type<std::decay_t<VectorTypes>> && ...) && dimensionally_equal<VectorTypes...>&&
-        requires(reference_type<VectorTypes>... values, NAryFun&& fun) { fun(values...); }
-    constexpr auto element_wise(NAryFun&& fun, VectorTypes&&... vectors) {
-        using return_value_type = std::invoke_result_t<NAryFun, reference_type<VectorTypes>...>;
+
+    /// element_wise
+    /// * Takes N vectors
+    /// * The vector sizes are equal
+    /// * Takes functor with N parameters
+    /// * The value type of the i'th vector is convertible to the i'th parameter of the functor
+    /// * The function never returns by-ref
+    /// * If the functor has a return type, the function itself returns a vector with the common size and the return type of the function with const, volatile and references removed.
+    /// * Otherwise the function returns void
+
+    template<typename... VectorTypes>
+    concept vector_types_compatible = (vector_type<std::decay_t<VectorTypes>> && ...) && dimensionally_equal<VectorTypes...>;
+
+    namespace detail
+    {
+        template<typename FunctorType, typename... VectorTypes, size_t... Component>
+        void element_wise_void(FunctorType&& functor, VectorTypes&&... vectors, std::index_sequence<Component...>)
+        {
+            size_t c = 0;
+            ((c = Component, (functor(vectors[c]...))), ...);
+        }
+        template<typename ResultType, typename FunctorType, typename... VectorTypes, size_t... Component>
+        auto element_wise_vtype(FunctorType&& functor, VectorTypes&&... vectors, std::index_sequence<Component...>)
+        {
+            using result_t = vec<ResultType, head_t<VectorTypes...>::component_count>;
+            size_t c = 0;
+            return result_t{ (c = Component, (functor(vectors[c]...)))... };
+        }
+    }
+
+    template<typename FunctorType, typename... VectorTypes>
+    auto element_wise(FunctorType&& functor, VectorTypes&&... vectors) requires requires(reference_type<VectorTypes>... values, FunctorType&& fun) { fun(values...); }
+    {
+        using return_value_type = std::invoke_result_t<FunctorType, reference_type<VectorTypes>...>;
         if constexpr (std::is_same_v<return_value_type, void>)
-        {
-            constexpr auto make_result = []<size_t... i>(VectorTypes&&... vectors, auto && fun, std::index_sequence<i...>) {
-                constexpr auto set_at = [](size_t index, VectorTypes&&... vectors, auto&& fun) { fun(vectors.at(index)...); };
-                (set_at(i, std::forward<VectorTypes>(vectors)..., fun), ...);
-            };
-            make_result(std::forward<VectorTypes>(vectors)..., std::forward<NAryFun>(fun), std::make_index_sequence<head_t<VectorTypes...>::component_count>());
-        }
+            detail::element_wise_void<FunctorType, VectorTypes...>(std::forward<FunctorType>(functor), std::forward<VectorTypes>(vectors)..., std::make_index_sequence<head_t<VectorTypes...>::component_count>());
         else
-        {
-            constexpr auto make_result = []<size_t... i>(VectorTypes&&... vectors, auto && fun, std::index_sequence<i...>) {
-                constexpr auto set_at = [](size_t index, VectorTypes&&... vectors, auto&& fun) { return fun(vectors.at(index)...); };
-                vec<return_value_type, head_t<VectorTypes...>::component_count> result(set_at(i, std::forward<VectorTypes>(vectors)..., fun)...);
-                return result;
-            };
-            return make_result(std::forward<VectorTypes>(vectors)..., std::forward<NAryFun>(fun), std::make_index_sequence<head_t<VectorTypes...>::component_count>());
-        }
+            return detail::element_wise_vtype<return_value_type, FunctorType, VectorTypes...>(std::forward<FunctorType>(functor), std::forward<VectorTypes>(vectors)..., std::make_index_sequence<head_t<VectorTypes...>::component_count>());
     }
 
     template<typename... MatrixTypes, typename NAryFun>

@@ -2,10 +2,60 @@
 #include <iostream>
 #include <chrono>
 #include <functional>
+#include <rnu/math/operators.hpp>
+
+/// element_wise
+/// * Takes N vectors
+/// * The vector sizes are equal
+/// * Takes functor with N parameters
+/// * The value type of the i'th vector is convertible to the i'th parameter of the functor
+/// * The function never returns by-ref
+/// * If the functor has a return type, the function itself returns a vector with the common size and the return type of the function with const, volatile and references removed.
+/// * Otherwise the function returns void
+//
+//
+//namespace rnu
+//{
+//    template<typename... VectorTypes> 
+//    concept vector_types_compatible = (vector_type<std::decay_t<VectorTypes>> && ...) && dimensionally_equal<VectorTypes...>;
+//
+//    namespace detail
+//    {
+//        template<typename FunctorType, typename... VectorTypes, size_t... Component>
+//        void element_wise_void(FunctorType&& functor, VectorTypes&&... vectors, std::index_sequence<Component...>)
+//        {
+//            size_t c = 0;
+//            ((c = Component, (functor(vectors[c]...))), ...);
+//        }
+//        template<typename ResultType, typename FunctorType, typename... VectorTypes, size_t... Component>
+//        auto element_wise_vtype(FunctorType&& functor, VectorTypes&&... vectors, std::index_sequence<Component...>)
+//        {
+//            using result_t = vec<ResultType, head_t<VectorTypes...>::component_count>;
+//            size_t c = 0;
+//            return result_t{ (c = Component, (functor(vectors[c]...)))... };
+//        }
+//    }
+//
+//    template<typename FunctorType, typename... VectorTypes>
+//    auto element_wise(FunctorType&& functor, VectorTypes&&... vectors) requires requires(reference_type<VectorTypes>... values, FunctorType&& fun) { fun(values...); }
+//    {
+//        using return_value_type = std::invoke_result_t<FunctorType, reference_type<VectorTypes>...>;
+//        if (std::is_same_v<return_value_type, void>)
+//            detail::element_wise_void<FunctorType, VectorTypes...>(std::forward<FunctorType>(functor), std::forward<VectorTypes>(vectors)..., std::make_index_sequence<head_t<VectorTypes...>::component_count>());
+//        else
+//            return detail::element_wise_vtype<return_value_type, FunctorType, VectorTypes...>(std::forward<FunctorType>(functor), std::forward<VectorTypes>(vectors)..., std::make_index_sequence<head_t<VectorTypes...>::component_count>());
+//    }
+//}
 
 int main(int argc, char** argv)
 {
-    using XX = rnu::reference_type<const rnu::vec3>;
+
+    rnu::vec3 a{ 2, 4, 9 };
+    rnu::vec3 b{ 1, 2, 3 };
+    auto nv = rnu::element_wise([](float x, float y) { return x + y; }, a, b);
+
+    return 0;
+    /*using XX = rnu::reference_type<const rnu::vec3>;
 
     rnu::vec3 vector;
 
@@ -60,7 +110,7 @@ int main(int argc, char** argv)
             vectors[i] = rnu::element_wise([](float a) { return a + a; }, vectors[i]);
         }
         std::cout << "Time: " << (std::chrono::steady_clock::now() - start).count() << " nanos\n";
-    }
+    }*/
 
     //rnu::vec4i vack;
     //vack % 9;
