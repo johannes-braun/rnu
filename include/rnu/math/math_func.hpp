@@ -7,64 +7,212 @@
 #include <concepts>
 #include <complex>
 #include <numeric>
+#include <bit>
+#include "cx_fun.hpp"
 
-namespace rnu 
+namespace rnu
 {
-    template<scalar_type T> [[nodiscard]] constexpr T abs(T value) noexcept;
-    template<std::floating_point T> [[nodiscard]] constexpr T sqrt(T value) noexcept;
-    template<std::floating_point T> [[nodiscard]] constexpr T cos(T val) noexcept;
-    template<std::floating_point T> [[nodiscard]] constexpr T sin(T val) noexcept;
-    template<std::floating_point T> [[nodiscard]] constexpr T tan(T val) noexcept;
-    template<std::floating_point T> [[nodiscard]] constexpr bool isnan(T val) noexcept;
-    template<std::floating_point T> [[nodiscard]] constexpr bool isinf(T val) noexcept;
-    template<std::floating_point T> [[nodiscard]] constexpr T real(T val) noexcept { return std::real(val); }
-    template<std::floating_point T> [[nodiscard]] constexpr T imag(T val) noexcept { return std::imag(val); }
-    template<scalar_type T> [[nodiscard]] constexpr T max(T val, T val2) noexcept { return std::max(val, val2); }
-    template<scalar_type T> [[nodiscard]] constexpr T min(T val, T val2) noexcept { return std::min(val, val2); }
-    template<scalar_type T> [[nodiscard]] constexpr T clamp(T val, T low, T high) noexcept { return std::clamp(val, low, high); }
-
-#define vectorize_fun(Name, Typename) \
-    template<Typename T> \
-    [[nodiscard]] constexpr auto Name(T val) noexcept(noexcept(Name<typename T::value_type>(typename T::value_type{}))) \
-    { return element_wise(&Name<typename T::value_type>, val); }
-#define vectorize_fun2(Name, Typename) \
-    template<Typename T> \
-    [[nodiscard]] constexpr auto Name(T val, T val2) noexcept(noexcept(Name<typename T::value_type>(typename T::value_type{}, typename T::value_type{}))) \
-    { return element_wise(&Name<typename T::value_type>, val, val2); }
-
-    vectorize_fun(sqrt, floating_point_vector);
-    vectorize_fun(cos, floating_point_vector);
-    vectorize_fun(sin, floating_point_vector);
-    vectorize_fun(tan, floating_point_vector);
-    vectorize_fun(isnan, floating_point_vector);
-    vectorize_fun(isinf, floating_point_vector);
-    vectorize_fun(real, floating_point_vector);
-    vectorize_fun(imag, floating_point_vector);
-    vectorize_fun(abs, vector_type);
-
-    vectorize_fun2(max, vector_type);
-    vectorize_fun2(min, vector_type);
-
-    template<typename T> 
-    [[nodiscard]] constexpr auto clamp(T val, T low, T high) 
-        noexcept(noexcept(clamp<typename T::value_type>(typename T::value_type{}, typename T::value_type{}, typename T::value_type{})))
-    { 
-        for (size_t i = 0; i < T::component_count; ++i)
-        {
-            val[i] = clamp(val[i], low[i], high[i]);
-        }
-        return val;
+  namespace detail2
+  {
+    template<typename T> requires requires(T t, size_t i) { {t.col(i)}; }
+    constexpr decltype(auto) get(T& t, size_t index)
+    {
+      return t.col(index);
     }
 
-    template<scalar_type T>
-    [[nodiscard]] constexpr T radians(T deg) noexcept {
-        return deg / T(180) * std::numbers::pi_v<T>;
+    template<typename T> requires requires(T t, size_t i) { {t[i]}; }
+    constexpr decltype(auto) get(T& t, size_t index)
+    {
+      return t[index];
     }
-    template<scalar_type T>
-    [[nodiscard]] constexpr T degrees(T rad) noexcept {
-        return rad * T(180) * std::numbers::inv_pi_v<T>;
+    template<typename T>
+    constexpr decltype(auto) get(T& t, size_t index)
+    {
+      return t;
     }
-#undef vectorize_fun
+
+    template<typename T>
+    constexpr auto get(T&& t, size_t index)
+    {
+      return get(static_cast<T&>(t), index);
+    }
+
+    template<typename T> requires requires { { std::decay_t<T>::cols }; }
+    constexpr size_t size()
+    {
+      return std::decay_t<T>::cols;
+    }
+    template<typename T> requires requires { { std::decay_t<T>::component_count }; }
+    constexpr size_t size()
+    {
+      return std::decay_t<T>::component_count;
+    }
+    template<typename T>
+    constexpr size_t size()
+    {
+      return 1;
+    }
+
+    template<typename T>
+    concept has_value_type = requires { { typename std::decay_t<T>::value_type{} }; };
+
+
+    template<typename T>
+    struct value_type_impl;
+
+    template<typename T> requires std::is_arithmetic_v<std::decay_t<T>>
+      struct value_type_impl<T> {
+        using type = std::decay_t<T>;
+      };
+
+      template<typename T> requires vector_type<std::decay_t<T>>
+        struct value_type_impl<T> {
+          using type = typename std::decay_t<T>::value_type;
+        };
+
+        template<typename T>
+        using value_type = typename value_type_impl<T>::type;
+
+        template<typename A, typename B>
+        concept compatible = size<A>() == size<B>() || size<A>() == 1 || size<B>() == 1;
+
+        template<typename T, typename ... Ts>
+        concept all_compatible = true && (compatible<T, Ts> && ...);
+
+        template<typename T, typename... Ts> requires all_compatible<T, Ts...>
+          consteval size_t common_size() {
+            size_t maximum = size<T>();
+            ((maximum = size<Ts>() > maximum ? size<Ts>() : maximum), ...);
+            return maximum;
+          }
+
+          template<typename Callable, typename... Ts>
+          concept suitable_operands = requires(Callable callable, Ts... ts) {
+            { common_size<Ts...>() };
+            { callable(detail2::get(ts, 0)...) };
+          };
+
+          template<typename Callable, typename... Ts> requires suitable_operands<Callable, Ts...>
+            auto apply(Callable callable, Ts&&... ts) {
+              constexpr auto s = common_size<Ts...>();
+              using ty = std::decay_t<decltype(callable(detail2::get(ts, 0)...))>;
+
+              if constexpr (s == 1)
+                return callable(detail2::get(ts, 0)...);
+              else if constexpr (std::same_as<ty, void>)
+              {
+                for (size_t i = 0; i < s; ++i)
+                  callable(detail2::get(ts, i)...);
+              }
+              else
+              {
+                vec<ty, s> r{};
+                for (size_t i = 0; i < s; ++i)
+                  r[i] = callable(detail2::get(ts, i)...);
+                return r;
+              }
+            }
+  }
+
+#define make_fun1(name, parent, a)\
+  template<typename Q>\
+  constexpr [[nodiscard]] decltype(auto) name(Q&& a) requires requires(detail2::value_type<Q> a) { { parent(a) }; }\
+  { return detail2::apply([](auto&&... v) { return parent(v...); }, a); }
+
+#define make_fun2(name, parent, a, b)\
+  template<typename Q, typename R>\
+  constexpr [[nodiscard]] decltype(auto) name(Q&& a, R&& b) requires requires(detail2::value_type<Q> a, detail2::value_type<R> b) { { parent(a, b) }; }\
+  { return detail2::apply([](auto&&... v) { return parent(v...); }, a, b); }
+
+#define make_fun3(name, parent, a, b, c)\
+  template<typename Q, typename R, typename S>\
+  constexpr [[nodiscard]] decltype(auto) name(Q&& a, R&& b, S&& c) requires requires(detail2::value_type<Q> a, detail2::value_type<R> b, detail2::value_type<S> c) { { parent(a, b, c) }; }\
+  { return detail2::apply([](auto&&... v) { return parent(v...); }, a, b, c); }
+
+#define expand_one_operator1(op, name)\
+  make_fun1(operator op, rnu::call_##name, value);
+
+#define expand_one_operator2(op, name)\
+  make_fun2(operator op, rnu::call_##name, lhs, rhs);
+
+#define make_assign(op)\
+  template<typename Q, typename R>\
+  constexpr [[nodiscard]] decltype(auto) operator op=(Q& a, R&& b) requires requires(detail2::value_type<Q> a, detail2::value_type<R> b) { { a op= b }; }\
+  { a = detail2::apply([](auto&& v, auto&& w) { return v op= w; }, a, b); return a; }
+
+#define expand_two_operators2(op, name) \
+  make_fun2(operator op, rnu::call_##name, lhs, rhs); \
+  make_assign(op);
+
+  make_fun1(isinf, std::isinf, value);
+  make_fun1(isnan, std::isnan, value);
+  make_fun1(abs, rnu::cx::abs, value);
+  make_fun1(sqrt, rnu::cx::sqrt, value);
+  make_fun1(sign, rnu::cx::sign, value);
+  make_fun1(radians, rnu::cx::radians, value);
+  make_fun1(degrees, rnu::cx::degrees, value);
+
+  make_fun1(sin, rnu::cx::sin, rad);
+  make_fun1(cos, rnu::cx::cos, rad);
+  make_fun1(tan, rnu::cx::tan, rad);
+  make_fun1(asin, rnu::cx::asin, value);
+  make_fun1(acos, rnu::cx::acos, value);
+  make_fun1(atan, rnu::cx::atan, value);
+  make_fun2(atan2, rnu::cx::atan2, y, x);
+
+  make_fun2(pow, rnu::cx::pow, base, exponent);
+  make_fun2(min, rnu::cx::min, a, b);
+  make_fun2(max, rnu::cx::max, a, b);
+  make_fun2(step, rnu::cx::step, value, threshold);
+  make_fun3(clamp, rnu::cx::clamp, value, lower, upper);
+  make_fun3(smoothstep, rnu::cx::smoothstep, edge0, edge1, value);
+
+  expand_two_operators2(+, plus);
+  expand_two_operators2(-, minus);
+  expand_two_operators2(*, multiplies);
+  expand_two_operators2(/ , divides);
+  expand_two_operators2(%, modulus);
+  expand_two_operators2(<< , bit_shl);
+  expand_two_operators2(>> , bit_shr);
+  expand_two_operators2(&, bit_and);
+  expand_two_operators2(| , bit_or);
+  expand_two_operators2(^, bit_xor);
+  expand_one_operator2(&&, logical_and);
+  expand_one_operator2(|| , logical_or);
+
+  expand_one_operator2(== , equal_to);
+  expand_one_operator2(!= , not_equal_to);
+  expand_one_operator2(> , greater);
+  expand_one_operator2(< , less);
+  expand_one_operator2(>= , greater_equal);
+  expand_one_operator2(<= , less_equal);
+
+  expand_one_operator1(!, logical_not);
+  expand_one_operator1(~, bit_not);
+  expand_one_operator1(-, negate);
+
+  template<typename V> requires requires(detail2::value_type<V>& v) { { v += 1}; }
+  constexpr V& operator++(V& v) noexcept { return v += 1; }
+
+  template<typename V> requires requires(detail2::value_type<V>& v) { {v += 1}; }
+  [[nodiscard]] constexpr V operator++(V& v, int) noexcept { V result = v; v += 1; return result; }
+
+  template<typename V> requires requires(detail2::value_type<V>& v) { {v -= 1}; }
+  constexpr V& operator--(V& v) noexcept { return v -= 1; }
+
+  template<typename V> requires requires(detail2::value_type<V>& v) { {v -= 1}; }
+  [[nodiscard]] constexpr V operator--(V& v, int) noexcept { V result = v; v -= 1; return result; }
+
+
+
+#undef expand_one_operator1
+#undef expand_one_operator2
+#undef expand_two_operators2
+#undef make_fun1
+#undef make_fun2
+#undef make_fun3
 }
+#include "vec_apply.hpp"
+
 #include "math_func.inl.hpp"
 #include "vec_math.inl.hpp"

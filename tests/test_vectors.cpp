@@ -1,7 +1,9 @@
 #include "catch_amalgamated.hpp"
 #include <rnu/math/math.hpp>
+#include <rnu/si.hpp>
 
 using namespace rnu;
+
 TEST_CASE("Basic Vector Functions")
 {
     SECTION("all_of, none_of, any_of")
@@ -9,7 +11,9 @@ TEST_CASE("Basic Vector Functions")
         vec3b all_true(true, true, true);
         vec3b all_false(false, false, false);
         vec3b one_true(false, true, false);
-        REQUIRE(all_true); // Implicit bool conversion, equivalent to next expression.
+        bool implicit = all_true;
+
+        REQUIRE(implicit); // Implicit bool conversion, equivalent to next expression.
         REQUIRE(all_of(all_true));
         REQUIRE(!all_of(one_true));
         REQUIRE(none_of(all_false));
@@ -105,9 +109,22 @@ TEST_CASE("Basic Vector Functions")
     }
 }
 
+namespace rnu::detail2 {
+  template<typename A, typename B, typename C>
+    struct value_type_impl<rnu::units::base::unit_t<A, B, C>> {
+      using type = rnu::units::base::unit_t<A, B, C>;
+    };
+}
+
 TEST_CASE("More of the same")
 {
+  rnu::vec<rnu::units::meter, 2> size;
+
+  auto aax = size / rnu::units::meter{ 10 };
+
     const float error = 1e-6f;
+    const auto axyco = 1.f;
+    rnu::max(axyco, 2.f);
 
     vec3 a(1, 2, 3);
     vec3 b(4, 5, 6);
@@ -116,7 +133,7 @@ TEST_CASE("More of the same")
 
     REQUIRE(bool(abs(d) == vec3(1, 2, 3)));
 
-    REQUIRE(dot(a, b) == 1 * 4 + 2 * 5 + 3 * 6);
-    REQUIRE(abs(norm(a) - std::sqrtf(1 * 1 + 2 * 2 + 3 * 3)) < error);
-    REQUIRE(bool(abs(normalize(c) - vec3(1, 0, 0)) < error));
+    REQUIRE(bool(dot(a, b) == 1 * 4 + 2 * 5 + 3 * 6));
+    REQUIRE(bool(abs(norm(a) - std::sqrtf(1 * 1 + 2 * 2 + 3 * 3)) < error));
+    //REQUIRE(bool(abs(normalize(c) - vec3(1, 0, 0)) < error));
 }

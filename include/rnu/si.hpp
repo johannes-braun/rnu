@@ -343,7 +343,7 @@ namespace rnu::units
     using hour = t_hour<double>;
 
     using newton = t_newton<double>;
-    using pascal = t_pascal<double>;
+    using pasc = t_pascal<double>;
     using bar = t_bar<double>;
 
     using fgram = t_gram<float>;
@@ -361,4 +361,12 @@ namespace rnu::units
     using fnewton = t_newton<float>;
     using fpascal = t_pascal<float>;
     using fbar = t_bar<float>;
+}
+
+namespace std
+{
+  template<rnu::units::base::descriptor_type Descriptor, typename Fraction, typename Scalar>
+  struct is_arithmetic<rnu::units::base::unit_t<Descriptor, Fraction, Scalar>> {
+    constexpr static bool value = true;
+  };
 }

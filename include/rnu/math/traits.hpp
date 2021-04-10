@@ -29,7 +29,10 @@ namespace rnu
     template<typename T> constexpr bool is_quat_v = is_quat<T>::value;
 
     template<typename T> concept matrix_type = is_matrix_v<T>;
-    template<typename T> concept vector_type = is_vector_v<T>;
+    template<typename T> concept vector_type = is_vector_v<T> && requires {
+      { T::component_count };
+      { T::value_type };
+    };
     template<typename T> concept quaternion_type = is_quat_v<T>;
     template<typename T> concept scalar_type = !is_matrix_v<T> && !is_vector_v<T> && !is_quat_v<T>;
 

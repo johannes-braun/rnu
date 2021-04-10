@@ -1,7 +1,6 @@
 #pragma once
 
 #include "vec_type.hpp"
-#include "vec_op.hpp"
 #include <cstdint>
 
 namespace rnu {

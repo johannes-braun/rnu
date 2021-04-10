@@ -153,7 +153,7 @@ namespace rnu {
 
         constexpr vec() noexcept;
         template<typename X, size_type D, typename = std::enable_if_t<std::is_convertible_v<X, T>>>
-        explicit constexpr vec(const vec<X, D>& other) noexcept;
+        constexpr vec(const vec<X, D>& other) noexcept;
         template<typename X, typename = std::enable_if_t<std::is_convertible_v<X, T>>>
         explicit constexpr vec(const X* ptr);
         template<typename X, typename = std::enable_if_t<std::is_convertible_v<X, T>>>

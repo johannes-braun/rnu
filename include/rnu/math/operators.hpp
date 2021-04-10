@@ -127,24 +127,40 @@ namespace rnu
         return index_wise_impl<C, R>(std::forward<Fun>(fun), std::make_index_sequence<C>(), std::make_index_sequence<R>());
     }
 
-    #define define_binary_const_callable(Name, Op) \
+#define define_binary_const_callable(Name, Op) \
     template<typename Lhs, typename Rhs = Lhs> requires requires{ {std::declval<Lhs>() Op std::declval<Rhs>()}; } \
     struct Name { \
         [[nodiscard]] constexpr auto operator()(Lhs const& lhs, Rhs const& rhs) const noexcept(noexcept(std::declval<Lhs>() Op std::declval<Rhs>())) \
         { return lhs Op rhs; } \
-    };
+    }; \
+    template<typename Lhs, typename Rhs = Lhs> requires requires(Lhs lhs, Rhs rhs){ {lhs Op rhs}; } \
+    constexpr auto call_##Name(Lhs const& lhs, Rhs const& rhs) { \
+      return Name<Lhs, Rhs>{}(lhs, rhs); \
+    } 
+
+#define define_binary_callable(Name, Op) \
+    define_binary_const_callable(Name, Op) \
+    template<typename Lhs, typename Rhs = Lhs> requires requires(Lhs lhs, Rhs rhs){ {lhs Op rhs}; } \
+    constexpr decltype(auto) call_##Name##_assign(Lhs& lhs, Rhs const& rhs) { \
+      return lhs = Name<Lhs, Rhs>{}(lhs, rhs); \
+    }
+
 #define define_unary_const_callable(Name, Op) \
     template<typename Lhs> requires requires{ {Op std::declval<Lhs>()}; } \
     struct Name { \
         [[nodiscard]] constexpr auto operator()(Lhs const& lhs) const noexcept(noexcept(Op std::declval<Lhs>())) \
         { return Op lhs; } \
-    };
+    }; \
+    template<typename Lhs> requires requires(Lhs lhs){ {Op lhs}; } \
+    constexpr auto call_##Name(Lhs const& lhs) { \
+      return Name<Lhs>{}(lhs); \
+    }
 
-    define_binary_const_callable(plus, +);
-    define_binary_const_callable(minus, -);
-    define_binary_const_callable(multiplies, *);
-    define_binary_const_callable(divides, /);
-    define_binary_const_callable(modulus, %);
+    define_binary_callable(plus, +);
+    define_binary_callable(minus, -);
+    define_binary_callable(multiplies, *);
+    define_binary_callable(divides, /);
+    define_binary_callable(modulus, %);
     define_unary_const_callable(negate, -);
     define_binary_const_callable(equal_to, ==);
     define_binary_const_callable(not_equal_to, !=);
@@ -152,131 +168,16 @@ namespace rnu
     define_binary_const_callable(less, <);
     define_binary_const_callable(greater_equal, >=);
     define_binary_const_callable(less_equal, <=);
-    define_binary_const_callable(bit_shl, <<);
-    define_binary_const_callable(bit_shr, >>);
-    define_binary_const_callable(bit_and, &);
-    define_binary_const_callable(bit_or, |);
-    define_binary_const_callable(bit_xor, ^);
+    define_binary_callable(bit_shl, <<);
+    define_binary_callable(bit_shr, >>);
+    define_binary_callable(bit_and, &);
+    define_binary_callable(bit_or, |);
+    define_binary_callable(bit_xor, ^);
     define_unary_const_callable(bit_not, ~);
     define_binary_const_callable(logical_and, &&);
     define_binary_const_callable(logical_or, ||);
     define_unary_const_callable(logical_not, !);
 #undef define_binary_const_callable
 #undef define_unary_const_callable
-
-    template<typename Lhs, typename Rhs> concept vector_and_scalar = vector_type<Lhs> && scalar_type<Rhs>;
-    template<typename Lhs, typename Rhs> concept scalar_and_vector = scalar_type<Lhs> && vector_type<Rhs>;
-    template<typename Lhs, typename Rhs> concept vector_and_vector = vector_type<Lhs> && vector_type<Rhs>;
-    template<typename Lhs, typename Rhs> concept same_or_any_scalar =
-        vector_and_vector<Lhs, Rhs> || vector_and_scalar<Lhs, Rhs> || scalar_and_vector<Lhs, Rhs>;
-    template<typename Lhs, typename Rhs, template<typename...> typename Fun> concept callable_exists = same_or_any_scalar<Lhs, Rhs> &&
-        requires{ Fun<scalar_type_of_t<Lhs>, scalar_type_of_t<Rhs>>{}; };
-    template<typename Lhs, template<typename...> typename Fun> concept callable_exists_unary = vector_type<Lhs> &&
-        requires{ Fun<scalar_type_of_t<Lhs>>{}; };
-    template<typename Lhs, typename Rhs, template<typename...> typename Fun> concept assignment_callable_exists = (vector_and_scalar<Lhs, Rhs> || vector_and_vector<Lhs, Rhs>) &&
-        requires{ Fun<scalar_type_of_t<Lhs>, scalar_type_of_t<Rhs>>{}; };
-
-    template<template<typename...> typename Fun, typename Lhs, typename Rhs> requires callable_exists<Lhs, Rhs, Fun>
-    constexpr auto operator_fun(Lhs const& lhs, Rhs const& rhs) noexcept
-    {
-        const Fun<scalar_type_of_t<Lhs>, scalar_type_of_t<Rhs>> fun{};
-        if constexpr (vector_and_vector<Lhs, Rhs>)
-            return element_wise([&](auto aa, auto bb) {return fun(aa, bb); }, lhs, rhs);
-        else if constexpr (vector_and_scalar<Lhs, Rhs>)
-            return element_wise([&](auto aa) {return fun(aa, rhs); }, lhs);
-        else if constexpr (scalar_and_vector<Lhs, Rhs>)
-            return element_wise([&](auto bb) {return fun(lhs, bb); }, rhs);
-        else
-            static_assert(false, "Detected missing case!");
-    }
-    template<template<typename...> typename Fun, typename Lhs, typename Rhs> requires assignment_callable_exists<Lhs, Rhs, plus>
-    constexpr Lhs& operator_assign_fun(Lhs& lhs, Rhs const& rhs) noexcept
-    {
-        lhs = operator_fun<Fun>(lhs, rhs);
-        return lhs;
-    }
-    template<template<typename...> typename Fun, typename Lhs> requires callable_exists_unary<Lhs, Fun>
-    constexpr auto const_operator_fun(Lhs const& lhs) noexcept
-    {
-        const Fun<scalar_type_of_t<Lhs>> fun{};
-        return element_wise([&](auto aa) {return fun(aa); }, lhs);
-    }
-
-    template<typename Lhs, typename Rhs> requires callable_exists<Lhs, Rhs, plus>
-    [[nodiscard]] constexpr auto operator+(Lhs const& lhs, Rhs const& rhs) noexcept { return operator_fun<plus>(lhs, rhs); }
-    template<typename Lhs, typename Rhs> requires callable_exists<Lhs, Rhs, minus>
-    [[nodiscard]] constexpr auto operator-(Lhs const& lhs, Rhs const& rhs) noexcept { return operator_fun<minus>(lhs, rhs); }
-    template<typename Lhs, typename Rhs> requires callable_exists<Lhs, Rhs, multiplies>
-    [[nodiscard]] constexpr auto operator*(Lhs const& lhs, Rhs const& rhs) noexcept { return operator_fun<multiplies>(lhs, rhs); }
-    template<typename Lhs, typename Rhs> requires callable_exists<Lhs, Rhs, divides>
-    [[nodiscard]] constexpr auto operator/(Lhs const& lhs, Rhs const& rhs) noexcept { return operator_fun<divides>(lhs, rhs); }
-    template<typename Lhs, typename Rhs> requires callable_exists<Lhs, Rhs, modulus>
-    [[nodiscard]] constexpr auto operator%(Lhs const& lhs, Rhs const& rhs) noexcept { return operator_fun<modulus>(lhs, rhs); }
-    template<typename Lhs> requires callable_exists_unary<Lhs, negate>
-    [[nodiscard]] constexpr auto operator-(Lhs const& lhs) noexcept { return const_operator_fun<negate>(lhs); }
-
-    template<typename Lhs, typename Rhs> requires callable_exists<Lhs, Rhs, logical_and>
-    [[nodiscard]] constexpr auto operator&&(Lhs const& lhs, Rhs const& rhs) noexcept { return operator_fun<logical_and>(lhs, rhs); }
-    template<typename Lhs, typename Rhs> requires callable_exists<Lhs, Rhs, logical_or>
-    [[nodiscard]] constexpr auto operator||(Lhs const& lhs, Rhs const& rhs) noexcept { return operator_fun<logical_or>(lhs, rhs); }
-    template<typename Lhs> requires callable_exists_unary<Lhs, logical_not>
-    [[nodiscard]] constexpr auto operator!(Lhs const& lhs) noexcept { return const_operator_fun<logical_not>(lhs); }
-
-    template<typename Lhs, typename Rhs> requires callable_exists<Lhs, Rhs, bit_and>
-    [[nodiscard]] constexpr auto operator&(Lhs const& lhs, Rhs const& rhs) noexcept { return operator_fun<bit_and>(lhs, rhs); }
-    template<typename Lhs, typename Rhs> requires callable_exists<Lhs, Rhs, bit_or>
-    [[nodiscard]] constexpr auto operator|(Lhs const& lhs, Rhs const& rhs) noexcept { return operator_fun<bit_or>(lhs, rhs); }
-    template<typename Lhs, typename Rhs> requires callable_exists<Lhs, Rhs, bit_xor>
-    [[nodiscard]] constexpr auto operator^(Lhs const& lhs, Rhs const& rhs) noexcept { return operator_fun<bit_xor>(lhs, rhs); }
-    template<typename Lhs, typename Rhs> requires callable_exists<Lhs, Rhs, bit_shl>
-    [[nodiscard]] constexpr auto operator<<(Lhs const& lhs, Rhs const& rhs) noexcept { return operator_fun<bit_shl>(lhs, rhs); }
-    template<typename Lhs, typename Rhs> requires callable_exists<Lhs, Rhs, bit_shr>
-    [[nodiscard]] constexpr auto operator>>(Lhs const& lhs, Rhs const& rhs) noexcept { return operator_fun<bit_shr>(lhs, rhs); }
-    template<typename Lhs> requires callable_exists_unary<Lhs, bit_not>
-    [[nodiscard]] constexpr auto operator~(Lhs const& lhs) noexcept { return const_operator_fun<bit_not>(lhs); }
-
-    template<typename Lhs, typename Rhs> requires callable_exists<Lhs, Rhs, equal_to>
-    [[nodiscard]] constexpr auto operator==(Lhs const& lhs, Rhs const& rhs) noexcept { return operator_fun<equal_to>(lhs, rhs); }
-    template<typename Lhs, typename Rhs> requires callable_exists<Lhs, Rhs, not_equal_to>
-    [[nodiscard]] constexpr auto operator!=(Lhs const& lhs, Rhs const& rhs) noexcept { return operator_fun<not_equal_to>(lhs, rhs); }
-    template<typename Lhs, typename Rhs> requires callable_exists<Lhs, Rhs, greater>
-    [[nodiscard]] constexpr auto operator>(Lhs const& lhs, Rhs const& rhs) noexcept { return operator_fun<greater>(lhs, rhs); }
-    template<typename Lhs, typename Rhs> requires callable_exists<Lhs, Rhs, less>
-    [[nodiscard]] constexpr auto operator<(Lhs const& lhs, Rhs const& rhs) noexcept { return operator_fun<less>(lhs, rhs); }
-    template<typename Lhs, typename Rhs> requires callable_exists<Lhs, Rhs, greater_equal>
-    [[nodiscard]] constexpr auto operator>=(Lhs const& lhs, Rhs const& rhs) noexcept { return operator_fun<greater_equal>(lhs, rhs); }
-    template<typename Lhs, typename Rhs> requires callable_exists<Lhs, Rhs, less_equal>
-    [[nodiscard]] constexpr auto operator<=(Lhs const& lhs, Rhs const& rhs) noexcept { return operator_fun<less_equal>(lhs, rhs); }
-
-    template<typename Lhs, typename Rhs> requires assignment_callable_exists<Lhs, Rhs, plus>
-    constexpr Lhs& operator+=(Lhs& lhs, Rhs const& rhs) noexcept { return operator_assign_fun<plus>(lhs, rhs); }
-    template<typename Lhs, typename Rhs> requires assignment_callable_exists<Lhs, Rhs, minus>
-    constexpr Lhs& operator-=(Lhs& lhs, Rhs const& rhs) noexcept { return operator_assign_fun<minus>(lhs, rhs); }
-    template<typename Lhs, typename Rhs> requires assignment_callable_exists<Lhs, Rhs, multiplies>
-    constexpr Lhs& operator*=(Lhs& lhs, Rhs const& rhs) noexcept { return operator_assign_fun<multiplies>(lhs, rhs); }
-    template<typename Lhs, typename Rhs> requires assignment_callable_exists<Lhs, Rhs, divides>
-    constexpr Lhs& operator/=(Lhs& lhs, Rhs const& rhs) noexcept { return operator_assign_fun<divides>(lhs, rhs); }
-    template<typename Lhs, typename Rhs> requires assignment_callable_exists<Lhs, Rhs, modulus>
-    constexpr Lhs& operator%=(Lhs& lhs, Rhs const& rhs) noexcept { return operator_assign_fun<modulus>(lhs, rhs); }
-    
-    template<typename Lhs, typename Rhs> requires assignment_callable_exists<Lhs, Rhs, bit_and>
-    constexpr Lhs& operator&=(Lhs& lhs, Rhs const& rhs) noexcept { return operator_assign_fun<bit_and>(lhs, rhs); }
-    template<typename Lhs, typename Rhs> requires assignment_callable_exists<Lhs, Rhs, bit_or>
-    constexpr Lhs& operator|=(Lhs& lhs, Rhs const& rhs) noexcept { return operator_assign_fun<bit_or>(lhs, rhs); }
-    template<typename Lhs, typename Rhs> requires assignment_callable_exists<Lhs, Rhs, bit_xor>
-    constexpr Lhs& operator^=(Lhs& lhs, Rhs const& rhs) noexcept { return operator_assign_fun<bit_xor>(lhs, rhs); }
-    template<typename Lhs, typename Rhs> requires assignment_callable_exists<Lhs, Rhs, bit_shl>
-    constexpr Lhs& operator<<=(Lhs& lhs, Rhs const& rhs) noexcept { return operator_assign_fun<bit_shl>(lhs, rhs); }
-    template<typename Lhs, typename Rhs> requires assignment_callable_exists<Lhs, Rhs, bit_shr>
-    constexpr Lhs& operator>>=(Lhs& lhs, Rhs const& rhs) noexcept { return operator_assign_fun<bit_shr>(lhs, rhs); }
-
-    template<vector_type V> requires requires(typename V::value_type v) { {++v}; }
-    constexpr V& operator++(V& v) noexcept { element_wise([=](auto& vv) {return ++vv; }, v); return v; }
-    template<vector_type V> requires requires(typename V::value_type v) { {v++}; }
-    [[nodiscard]] constexpr V operator++(V& v, int) noexcept { V result = v; element_wise([=](auto& vv) {return vv++; }, v); return result; }
-    template<vector_type V> requires requires(typename V::value_type v) { {--v}; }
-    constexpr V& operator--(V& v) noexcept { element_wise([=](auto& vv) {return --vv; }, v); return v; }
-    template<vector_type V> requires requires(typename V::value_type v) { {v--}; }
-    [[nodiscard]] constexpr V operator--(V& v, int) noexcept { V result = v; element_wise([=](auto& vv) {return vv--; }, v); return result; }
 }
 #include "mat_op.inl.hpp"
