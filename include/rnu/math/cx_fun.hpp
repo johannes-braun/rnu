@@ -76,10 +76,12 @@ namespace rnu::cx
     }
   }
 
-  constexpr double abs(double x) {
+  template<typename T> requires requires(T t) { {t < 0 ? -t : t}; }
+  constexpr double abs(T x) {
     return x < 0 ? -x : x;
   }
-  constexpr double round(double x) {
+  template<std::floating_point T>
+  constexpr T round(T x) {
     if (std::is_constant_evaluated()) {
       x += (x > 0 ? -0.5 : 0.5);
       double v;
@@ -92,11 +94,12 @@ namespace rnu::cx
     }
   }
 
-  constexpr double sqrt(double x) {
+  template<std::floating_point T>
+  constexpr T sqrt(T x) {
     if (std::is_constant_evaluated()) {
-      double a = 0, b = x > 1 ? x : 1;
+      T a = 0, b = x > 1 ? x : 1;
       while (abs(a - b) > detail::eps) {
-        double y = (a + b) / 2;
+        T y = (a + b) / 2;
         if (y * y > x) b = y; else a = y;
       }
       return a;
@@ -107,31 +110,42 @@ namespace rnu::cx
     }
   }
 
-  constexpr double pow(double x, double y) {
+  template<std::floating_point T, typename R> 
+  constexpr T pow(T x, R y) {
     if (std::is_constant_evaluated()) {
-      if (x < 0 && abs(round(y) - y) < detail::eps) {
-        return pow(-x, y) * ((int)round(y) % 2 == 1 ? -1 : 1);
-      }
-      else if (y < 0) {
-        return 1 / pow(x, -y);
-      }
-      else if (y > 1) {
-        return pow(x * x, y / 2);
-      }
-      else {
-        double fraction = 1;
-        double result = 1;
-
-        while (y > detail::eps) {
-          if (y >= fraction) {
-            y -= fraction;
-            result *= x;
-          }
-
-          fraction /= 2;
-          x = sqrt(x);
-        }
+      if constexpr (std::integral<R>) 
+      {
+        T result = x;
+        for (R i = 0; i < y; ++i)
+          result *= x;
         return result;
+      }
+      else
+      {
+        if (x < 0 && abs(round(y) - y) < detail::eps) {
+          return pow(-x, y) * ((int)round(y) % 2 == 1 ? -1 : 1);
+        }
+        else if (y < 0) {
+          return 1 / pow(x, -y);
+        }
+        else if (y > 1) {
+          return pow(x * x, y / 2);
+        }
+        else {
+          double fraction = 1;
+          double result = 1;
+
+          while (y > detail::eps) {
+            if (y >= fraction) {
+              y -= fraction;
+              result *= x;
+            }
+
+            fraction /= 2;
+            x = sqrt(x);
+          }
+          return result;
+        }
       }
     }
     else
@@ -151,10 +165,11 @@ namespace rnu::cx
     }
   }
 
-  constexpr double sin(double x) {
+  template<std::floating_point T>
+  constexpr T sin(T x) {
     if (std::is_constant_evaluated()) {
       x = fmod(x, 2 * std::numbers::pi);
-      const auto x2 = x * x;
+      const double x2 = x * x;
       double ex = x;
       double fac = 1.0;
       double r = 0.0;
@@ -172,7 +187,8 @@ namespace rnu::cx
     }
   }
 
-  constexpr double cos(double x) {
+  template<std::floating_point T>
+  constexpr T cos(T x) {
     if (std::is_constant_evaluated()) {
       x = fmod(x, 2 * std::numbers::pi);
       const auto x2 = x * x;
@@ -192,7 +208,8 @@ namespace rnu::cx
       return std::cos(x);
     }
   }
-  constexpr double tan(double x) {
+  template<std::floating_point T>
+  constexpr T tan(T x) {
     if (std::is_constant_evaluated()) {
       return sin(x) / cos(x);
     }
@@ -202,7 +219,8 @@ namespace rnu::cx
     }
   }
 
-  constexpr double asin(double x) {
+  template<std::floating_point T>
+  constexpr T asin(T x) {
     if (std::is_constant_evaluated()) {
       double a0 = 1.5707288;
       double a1 = -0.2121144;
@@ -222,7 +240,8 @@ namespace rnu::cx
   }
 
 
-  constexpr double acos(double x) {
+  template<std::floating_point T>
+  constexpr T acos(T x) {
     if (std::is_constant_evaluated()) {
       return std::numbers::pi / 2 - asin(x);
     }
@@ -232,7 +251,8 @@ namespace rnu::cx
     }
   }
 
-  constexpr double atan(double x) {
+  template<std::floating_point T>
+  constexpr T atan(T x) {
     if (std::is_constant_evaluated()) {
       x = fmod(x, 2 * std::numbers::pi);
       const double x2 = x * x;
@@ -258,7 +278,8 @@ namespace rnu::cx
     }
   }
 
-  constexpr double atan2(double y, double x) {
+  template<std::floating_point T>
+  constexpr T atan2(T y, T x) {
     //http://pubs.opengroup.org/onlinepubs/009695399/functions/atan2.html
     //Volkan SALMA
 

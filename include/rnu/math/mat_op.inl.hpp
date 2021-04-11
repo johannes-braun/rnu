@@ -1,6 +1,18 @@
 #pragma once
 
 namespace rnu {
+  template<size_t C, size_t R, typename Fun, size_t... Cs, size_t ... Rs>
+  constexpr void index_wise_impl(Fun&& fun, std::index_sequence<Cs...>, std::index_sequence<Rs...>)
+  {
+    size_t col; ((col = Cs, (fun(col, Rs), ...)), ...);
+  }
+
+  template<size_t C, size_t R, typename Fun>
+  constexpr void index_wise(Fun&& fun)
+  {
+    return index_wise_impl<C, R>(std::forward<Fun>(fun), std::make_index_sequence<C>(), std::make_index_sequence<R>());
+  }
+
 #define make_scalar_mat_ops(Op) \
     template<matrix_type M, scalar_type S> \
     requires requires(typename M::scalar_type a, S b) { {a Op b}; } \

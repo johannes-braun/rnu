@@ -28,13 +28,13 @@ namespace rnu
     template<std::floating_point T> struct is_quat<quat_t<T>> : std::true_type {};
     template<typename T> constexpr bool is_quat_v = is_quat<T>::value;
 
-    template<typename T> concept matrix_type = is_matrix_v<T>;
-    template<typename T> concept vector_type = is_vector_v<T> && requires {
+    template<typename T> concept matrix_type = is_matrix_v<std::decay_t<T>>;
+    template<typename T> concept vector_type = is_vector_v<std::decay_t<T>> && requires {
       { T::component_count };
       { T::value_type };
     };
-    template<typename T> concept quaternion_type = is_quat_v<T>;
-    template<typename T> concept scalar_type = !is_matrix_v<T> && !is_vector_v<T> && !is_quat_v<T>;
+    template<typename T> concept quaternion_type = is_quat_v<std::decay_t<T>>;
+    template<typename T> concept scalar_type = !is_matrix_v<std::decay_t<T>> && !is_vector_v<std::decay_t<T>> && !is_quat_v<std::decay_t<T>>;
 
     template<typename T>
     concept floating_point_vector = vector_type<T> && std::floating_point<scalar_type_of_t<T>>;

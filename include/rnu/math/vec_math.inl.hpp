@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include "math_func.hpp"
 
 namespace rnu {
     template<floating_point_vector V>
@@ -16,7 +17,7 @@ namespace rnu {
     template<floating_point_vector V>
     [[nodiscard]] constexpr auto normalize(V a) noexcept
     {
-        return element_wise([inv_len = (1) / norm(a)](const auto& val) { return val * inv_len; }, a);
+        return detail2::apply([inv_len = (1) / norm(a)](const auto& val) { return val * inv_len; }, a);
     }
     template<typename T>
     [[nodiscard]] constexpr auto cross(const vec<T, 3>& a, const vec<T, 3>& b) noexcept

@@ -4,6 +4,8 @@
 
 using namespace rnu;
 
+
+
 TEST_CASE("Basic Vector Functions")
 {
     SECTION("all_of, none_of, any_of")
@@ -103,8 +105,8 @@ TEST_CASE("Basic Vector Functions")
         vec3i a(1, 2, 3);
         vec3 b(1, 2, 3);
 
-        REQUIRE(all_of(element_wise([](float f) {return static_cast<int>(f); }, b) == a));
-        element_wise([](int& i) { i++; }, a);
+        REQUIRE(all_of(apply([](float f) {return static_cast<int>(f); }, b) == a));
+        apply([](int& i) { i++; }, a);
         REQUIRE(all_of(a == vec3i(2, 3, 4)));
     }
 }
