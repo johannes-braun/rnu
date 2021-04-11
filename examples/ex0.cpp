@@ -1,30 +1,20 @@
-#include <rnu/math/math.hpp>
 #include <iostream>
 #include <chrono>
 #include <functional>
 #include <rnu/math/math.hpp>
 #include <rnu/si.hpp>
 
-
 int main(int argc, char** argv)
 {
-  bool axxx = false;
+  namespace si = rnu::units;
 
-  rnu::vec<rnu::units::meter, 2> len;
-  rnu::vec2 a{ 23, 11 };
+  rnu::vec3 vector;
+  rnu::vec<rnu::vec3, 3> vecs{ rnu::vec3{1, -1, 1}, rnu::vec3{1, 3, 1}, rnu::vec3{-3, -65, 1} };
+  rnu::mat4 wuw{ 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 };
+  auto x = rnu::sqrt(wuw);
 
-  auto eq = rnu::call_equal_to(len, len);
+  auto ayy = si::kilo<si::t_kelvin<int>>{ 1 } < si::kelvin{ 5 };
 
-  auto b = !((len + len)/ sqrt(a) <= rnu::units::meter{ 10 });
-
-  auto ay = normalize(a);
-
-  //constexpr auto map = rnu::detail2::any_vector_type<rnu::mat3, rnu::vec3>;
-
-  rnu::mat4 mup;
-  mup = mup * mup;
-  rnu::mat2 mep;
-  rnu::vec2 ayxop = mep * ay;
 
   __debugbreak();
   return 0;

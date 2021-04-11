@@ -61,6 +61,9 @@ namespace rnu
     template<typename T> requires vector_type<std::decay_t<T>> struct value_type_impl<T> {
       using type = typename std::decay_t<T>::value_type;
     };
+    template<typename T> requires matrix_type<std::decay_t<T>> struct value_type_impl<T> {
+      using type = typename std::decay_t<T>::value_type;
+    };
 
     template<typename T>
     using value_type = typename value_type_impl<T>::type;
@@ -78,34 +81,56 @@ namespace rnu
     }
 
     template<typename Callable, typename... Ts>
-    concept suitable_operands = requires(Callable callable, Ts... ts) {
+    concept suitable_operands = requires(Callable callable, value_type<Ts>... ts) {
       { common_size<Ts...>() };
-      { callable(detail2::get(ts, 0)...) };
+      { callable(ts...) };
     };
 
     template<typename Callable, typename... Ts>
-    auto apply(Callable callable, Ts&&... ts) requires suitable_operands<Callable, Ts...> {
+    constexpr auto apply(Callable callable, Ts&&... ts) requires suitable_operands<Callable, Ts...> {
       constexpr auto s = common_size<Ts...>();
-      using ty = std::decay_t<decltype(callable(detail2::get(ts, 0)...))>;
 
-      if constexpr (s == 1)
-        return callable(detail2::get(ts, 0)...);
-      else if constexpr (std::same_as<ty, void>)
+      if constexpr (!(vector_type<std::decay_t<decltype(detail2::get(std::declval<Ts>(), 0))>> || ...))
       {
-        for (size_t i = 0; i < s; ++i)
-          callable(detail2::get(ts, i)...);
+        using ty = std::decay_t<decltype(callable(detail2::get(ts, 0)...))>;
+        if constexpr (s == 1)
+          return callable(detail2::get(ts, 0)...);
+        else if constexpr (std::same_as<ty, void>)
+        {
+          for (size_t i = 0; i < s; ++i)
+            callable(detail2::get(ts, i)...);
+        }
+        else
+        {
+          vec<ty, s> r{};
+          for (size_t i = 0; i < s; ++i) {
+            r[i] = callable(detail2::get(ts, i)...);
+          }
+          return r;
+        }
       }
       else
       {
-        vec<ty, s> r{};
-        for (size_t i = 0; i < s; ++i)
-          r[i] = callable(detail2::get(ts, i)...);
-        return r;
+        using ty = std::decay_t<decltype(detail2::apply<Callable>(callable, detail2::get(ts, 0)...))>;
+
+        if constexpr (std::same_as<ty, void>)
+        {
+          for (size_t i = 0; i < s; ++i)
+            detail2::apply<Callable>(callable, detail2::get(ts, i)...);
+        }
+        else
+        {
+          vec<ty, s> r{};
+          for (size_t i = 0; i < s; ++i) {
+            r[i] = detail2::apply<Callable>(callable, detail2::get(ts, i)...);
+          }
+          return r;
+        }
       }
     }
   }
   template<typename Callable, typename... Ts>
-  auto apply(Callable callable, Ts&&... ts) requires detail2::suitable_operands<Callable, Ts...> {
+  constexpr auto apply(Callable callable, Ts&&... ts) requires detail2::suitable_operands<Callable, Ts...> {
     return detail2::apply(callable, std::forward<Ts>(ts)...);
   }
 
@@ -202,16 +227,16 @@ namespace rnu
   expand_one_operator1(~, bit_not);
   expand_one_operator1(-, negate);
 
-  template<typename V> requires requires(detail2::value_type<V>& v) { { v += 1}; }
+  template<vector_type V> requires requires(detail2::value_type<V>& v) { { v += 1}; }
   constexpr V& operator++(V& v) noexcept { return v += 1; }
 
-  template<typename V> requires requires(detail2::value_type<V>& v) { {v += 1}; }
+  template<vector_type V> requires requires(detail2::value_type<V>& v) { {v += 1}; }
   [[nodiscard]] constexpr V operator++(V& v, int) noexcept { V result = v; v += 1; return result; }
 
-  template<typename V> requires requires(detail2::value_type<V>& v) { {v -= 1}; }
+  template<vector_type V> requires requires(detail2::value_type<V>& v) { {v -= 1}; }
   constexpr V& operator--(V& v) noexcept { return v -= 1; }
 
-  template<typename V> requires requires(detail2::value_type<V>& v) { {v -= 1}; }
+  template<vector_type V> requires requires(detail2::value_type<V>& v) { {v -= 1}; }
   [[nodiscard]] constexpr V operator--(V& v, int) noexcept { V result = v; v -= 1; return result; }
 
 

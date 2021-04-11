@@ -17,6 +17,12 @@ namespace rnu::units
             constexpr static auto nominator = Nom;
             constexpr static auto denominator = Den;
             template<std::floating_point Float> constexpr static Float as = static_cast<Float>(Nom) / static_cast<Float>(Den);
+
+            template<typename T> constexpr static auto mul(T value) {
+              using float_type = std::conditional_t<std::greater<size_t>{}(sizeof(std::decay_t<T>), sizeof(float)), double, float>;
+
+              return float_type(value) * float_type(Nom) / float_type(Den);
+            }
         };
 
         template<size_t Nom, size_t Den, size_t Gcd = std::gcd(Nom, Den)>
@@ -116,6 +122,30 @@ namespace rnu::units
         }
 
         template<descriptor_type Descriptor, typename Fraction, typename Scalar>
+        struct unit_t;
+
+        template<typename Unit>
+        struct dissolve_unit
+        {
+          using type = Unit;
+        };
+
+        template<descriptor_type Descriptor, typename Fraction, typename Scalar>
+        struct dissolve_unit<unit_t<Descriptor, Fraction, Scalar>>
+        {
+          using type = unit_t<Descriptor, Fraction, Scalar>;
+        };
+
+        template<typename Scalar>
+        struct dissolve_unit<unit_t<descriptor_t<nulltuple, nulltuple>, fraction_t<1, 1>, Scalar>>
+        {
+          using type = Scalar;
+        };
+
+        template<typename T>
+        using dissolve_unit_t = typename dissolve_unit<T>::type;
+
+        template<descriptor_type Descriptor, typename Fraction, typename Scalar>
         struct unit_t
         {
             using fraction = Fraction;
@@ -127,8 +157,8 @@ namespace rnu::units
             constexpr unit_t(scalar_type value = 0.0)
                 : value(value) {}
 
-            template<typename OtherFraction, typename OtherScalar>
-            constexpr unit_t(unit_t<Descriptor, OtherFraction, OtherScalar> other) : value((static_cast<scalar_type>(other.value) / Fraction::template as<scalar_type>) * OtherFraction::template as<scalar_type>) {
+            template<typename OtherFraction, std::convertible_to<scalar_type> OtherScalar>
+            constexpr unit_t(unit_t<Descriptor, OtherFraction, OtherScalar> other) : value(OtherFraction::template mul<scalar_type>((typename Fraction::inverse)::template mul<scalar_type>(other.value))) {
 
             }
 
@@ -137,82 +167,95 @@ namespace rnu::units
                 return unit_t<descriptor, fraction, OtherScalar>(*this);
             }
 
-            template<descriptor_type OtherDescriptor, typename OtherFraction>
-            friend constexpr auto operator*(unit_t lhs, unit_t<OtherDescriptor, OtherFraction, scalar_type> rhs)
+            template<descriptor_type OtherDescriptor, typename OtherFraction, std::convertible_to<scalar_type> OtherScalar>
+            friend constexpr auto operator*(unit_t lhs, unit_t<OtherDescriptor, OtherFraction, OtherScalar> rhs)
             {
                 using return_descriptor = decltype(detail::multiply_and_normalize<Descriptor, OtherDescriptor>());
-                return unit_t<return_descriptor, reduced_fraction<Fraction::nominator* OtherFraction::nominator, Fraction::denominator* OtherFraction::denominator>, scalar_type>{
+                return dissolve_unit_t<unit_t<return_descriptor, reduced_fraction<Fraction::nominator* OtherFraction::nominator, Fraction::denominator* OtherFraction::denominator>, std::common_type_t<OtherScalar, scalar_type>>>{
                     lhs.value* rhs.value
                 };
             }
-            friend constexpr auto operator*(unit_t lhs, scalar_type rhs)
+            template<std::convertible_to<scalar_type> OtherScalar>
+            friend constexpr auto operator*(unit_t lhs, OtherScalar rhs)
             {
-                return unit_t<Descriptor, Fraction, scalar_type>{ lhs.value* rhs };
+                return unit_t<Descriptor, Fraction, std::common_type_t<OtherScalar, scalar_type>>{ lhs.value * rhs };
             }
-            friend constexpr auto operator*(scalar_type rhs, unit_t lhs)
+            template<std::convertible_to<scalar_type> OtherScalar>
+            friend constexpr auto operator*(OtherScalar rhs, unit_t lhs)
             {
-                return unit_t<Descriptor, Fraction, scalar_type>{ rhs* lhs.value };
+                return unit_t<Descriptor, Fraction, std::common_type_t<OtherScalar, scalar_type>>{ rhs * lhs.value };
             }
-            template<descriptor_type OtherDescriptor, typename OtherFraction>
-            friend constexpr auto operator/(unit_t lhs, unit_t<OtherDescriptor, OtherFraction, scalar_type> rhs)
+            template<descriptor_type OtherDescriptor, typename OtherFraction, std::convertible_to<scalar_type> OtherScalar>
+            friend constexpr auto operator/(unit_t lhs, unit_t<OtherDescriptor, OtherFraction, OtherScalar> rhs)
             {
                 using return_descriptor = decltype(detail::multiply_and_normalize<Descriptor, typename OtherDescriptor::inverse>());
-                return unit_t<return_descriptor, reduced_fraction<Fraction::nominator* OtherFraction::denominator, Fraction::denominator* OtherFraction::nominator>, scalar_type>{
+                return dissolve_unit_t<unit_t<return_descriptor, reduced_fraction<Fraction::nominator* OtherFraction::denominator, Fraction::denominator* OtherFraction::nominator>, std::common_type_t<OtherScalar, scalar_type>>>{
                     lhs.value / rhs.value
                 };
             }
-            friend constexpr auto operator/(unit_t lhs, scalar_type rhs)
+            template<std::convertible_to<scalar_type> OtherScalar>
+            friend constexpr auto operator/(unit_t lhs, OtherScalar rhs)
             {
-                return unit_t<Descriptor, Fraction, scalar_type>{ lhs.value / rhs };
+                return unit_t<Descriptor, Fraction, std::common_type_t<OtherScalar, scalar_type>>{ lhs.value / rhs };
             }
+            template<std::convertible_to<scalar_type> OtherScalar>
             friend constexpr auto operator/(scalar_type rhs, unit_t lhs)
             {
-                return unit_t<typename Descriptor::inverse, typename Fraction::inverse, scalar_type>{ rhs / lhs.value };
+                return unit_t<typename Descriptor::inverse, typename Fraction::inverse, std::common_type_t<OtherScalar, scalar_type>>{ rhs / lhs.value };
             }
 
-            template<typename OtherFraction>
-            friend constexpr auto operator+(unit_t lhs, unit_t<Descriptor, OtherFraction, scalar_type> rhs)
+            template<typename OtherFraction, std::convertible_to<scalar_type> OtherScalar>
+            friend constexpr auto operator+(unit_t lhs, unit_t<Descriptor, OtherFraction, OtherScalar> rhs)
             {
                 constexpr auto factor = OtherFraction::template as<scalar_type> / Fraction::template as<scalar_type>;
-                return unit_t<Descriptor, Fraction, scalar_type>{
+                return unit_t<Descriptor, Fraction, std::common_type_t<OtherScalar, scalar_type>>{
                     lhs.value + rhs.value * factor
                 };
             }
-            template<typename OtherFraction>
-            friend constexpr auto operator-(unit_t lhs, unit_t<Descriptor, OtherFraction, scalar_type> rhs)
+            template<typename OtherFraction, std::convertible_to<scalar_type> OtherScalar>
+            friend constexpr auto operator-(unit_t lhs, unit_t<Descriptor, OtherFraction, OtherScalar> rhs)
             {
-                constexpr auto factor = OtherFraction::template as<scalar_type> / Fraction::template as<scalar_type>;
-                return unit_t<Descriptor, Fraction, scalar_type>{
+              using ty = std::common_type_t<OtherScalar, scalar_type>;
+                constexpr auto factor = OtherFraction::template as<ty> / Fraction::template as<ty>;
+                return unit_t<Descriptor, Fraction, ty>{
                     lhs.value - rhs.value * factor
                 };
             }
 
-            template<typename B>
+            template<typename B> requires requires(unit_t& a, B b) { a = a + b; }
             friend constexpr auto operator+=(unit_t& a, B b)
             {
                 a = a + b;
                 return a;
             }
-            template<typename B>
+            template<typename B> requires requires(unit_t& a, B b) { a = a - b; }
             friend constexpr auto operator-=(unit_t& a, B b)
             {
                 a = a - b;
                 return a;
             }
-            template<typename B>
+            template<typename B> requires requires(unit_t& a, B b) { a = a * b; }
             friend constexpr auto operator*=(unit_t& a, B b)
             {
                 a = a * b;
                 return a;
             }
-            template<typename B>
+            template<typename B> requires requires(unit_t& a, B b) { a = a / b; }
             friend constexpr auto operator/=(unit_t& a, B b)
             {
                 a = a / b;
                 return a;
             }
 
-            constexpr auto operator<=>(const unit_t& other) const = default;
+            template<typename OtherFraction, std::convertible_to<scalar_type> OtherScalar>
+            constexpr auto operator<=>(unit_t<Descriptor, OtherFraction, OtherScalar> const& other) const {
+              
+              const auto self_value = Fraction::mul(value);
+              const auto other_value = OtherFraction::mul(other.value);
+              using common = std::common_type_t<std::decay_t<decltype(self_value)>, std::decay_t<decltype(other_value)>>;
+
+              return common(self_value) <=> common(other_value);
+            };
         };
     }
 
@@ -361,12 +404,4 @@ namespace rnu::units
     using fnewton = t_newton<float>;
     using fpascal = t_pascal<float>;
     using fbar = t_bar<float>;
-}
-
-namespace std
-{
-  template<rnu::units::base::descriptor_type Descriptor, typename Fraction, typename Scalar>
-  struct is_arithmetic<rnu::units::base::unit_t<Descriptor, Fraction, Scalar>> {
-    constexpr static bool value = true;
-  };
 }

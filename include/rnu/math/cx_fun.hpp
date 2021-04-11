@@ -76,9 +76,9 @@ namespace rnu::cx
     }
   }
 
-  template<typename T> requires requires(T t) { {t < 0 ? -t : t}; }
-  constexpr double abs(T x) {
-    return x < 0 ? -x : x;
+  template<typename T> requires requires(T t) { { T(t < 0 ? -t : t) }; }
+  constexpr T abs(T x) {
+    return T(x < 0 ? -x : x);
   }
   template<std::floating_point T>
   constexpr T round(T x) {
