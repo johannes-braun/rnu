@@ -83,10 +83,10 @@ namespace rnu::cx
   template<std::floating_point T>
   constexpr T round(T x) {
     if (std::is_constant_evaluated()) {
-      x += (x > 0 ? -0.5 : 0.5);
+      x += static_cast<T>(x > 0 ? -0.5 : 0.5);
       double v;
       modf(x, &v);
-      return v;
+      return static_cast<T>(v);
     }
     else
     {
@@ -122,35 +122,36 @@ namespace rnu::cx
       }
       else
       {
-        if (x < 0 && abs(round(y) - y) < detail::eps) {
-          return pow(-x, y) * ((int)round(y) % 2 == 1 ? -1 : 1);
+        auto _y = static_cast<double>(y);
+        if (x < 0 && abs(round(_y) - _y) < detail::eps) {
+          return pow(-x, _y) * ((int)round(_y) % 2 == 1 ? -1 : 1);
         }
-        else if (y < 0) {
-          return 1 / pow(x, -y);
+        else if (_y < 0) {
+          return 1 / pow(x, -_y);
         }
-        else if (y > 1) {
-          return pow(x * x, y / 2);
+        else if (_y > 1) {
+          return pow(x * x, _y / 2);
         }
         else {
           double fraction = 1;
           double result = 1;
 
-          while (y > detail::eps) {
-            if (y >= fraction) {
-              y -= fraction;
+          while (_y > detail::eps) {
+            if (_y >= fraction) {
+              _y -= fraction;
               result *= x;
             }
 
             fraction /= 2;
             x = sqrt(x);
           }
-          return result;
+          return static_cast<T>(result);
         }
       }
     }
     else
     {
-      return std::pow(x, y);
+      return static_cast<T>(std::pow(x, y));
     }
   }
 
@@ -168,7 +169,7 @@ namespace rnu::cx
   template<std::floating_point T>
   constexpr T sin(T x) {
     if (std::is_constant_evaluated()) {
-      x = fmod(x, 2 * std::numbers::pi);
+      x = static_cast<T>(fmod(x, 2 * std::numbers::pi));
       const double x2 = x * x;
       double ex = x;
       double fac = 1.0;
@@ -179,18 +180,18 @@ namespace rnu::cx
         ex *= -x2;
         fac *= 2 * (i + 1) * ((i + 1) * 2 + 1);
       }
-      return r;
+      return static_cast<T>(r);
     }
     else
     {
-      return std::sin(x);
+      return static_cast<T>(std::sin(x));
     }
   }
 
   template<std::floating_point T>
   constexpr T cos(T x) {
     if (std::is_constant_evaluated()) {
-      x = fmod(x, 2 * std::numbers::pi);
+      x = static_cast<T>(fmod(x, 2 * std::numbers::pi));
       const auto x2 = x * x;
       double fac = 1.0;
       double ex = 1;
@@ -201,7 +202,7 @@ namespace rnu::cx
         ex *= -x2;
         fac *= ((i) * 2 + 1) * ((i) * 2 + 2);
       }
-      return r;
+      return static_cast<T>(r);
     }
     else
     {

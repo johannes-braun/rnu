@@ -7,7 +7,7 @@ namespace rnu {
     template<floating_point_vector V>
     [[nodiscard]] constexpr auto dot(V a, V b) noexcept
     {
-        return detail::dot_impl(std::make_index_sequence < V{}.size() > (), a.components, b.components);
+        return detail::dot_impl(std::make_index_sequence < V{}.size() > (), a.data(), b.data());
     }
     template<floating_point_vector V>
     [[nodiscard]] constexpr auto norm(V a) noexcept

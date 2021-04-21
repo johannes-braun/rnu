@@ -126,7 +126,7 @@ TEST_CASE("More of the same")
 
     const float error = 1e-6f;
     const auto axyco = 1.f;
-    rnu::max(axyco, 2.f);
+    const auto max = rnu::max(axyco, 2.f);
 
     vec3 a(1, 2, 3);
     vec3 b(4, 5, 6);

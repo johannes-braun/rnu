@@ -21,17 +21,17 @@ namespace rnu {
     {}
 
     template<typename T, size_t S>
-    template<typename X, size_t D, typename>
+    template<typename X, size_t D> requires std::convertible_to<X, T>
     constexpr vec<T, S>::vec(const vec<X, D>& other) noexcept : vec(std::make_index_sequence<std::min(S, D)>(), other)
     {}
 
     template<typename T, size_t S>
-    template<typename X, typename>
+    template<typename X> requires std::convertible_to<X, T>
     constexpr vec<T, S>::vec(const X* ptr) : vec(std::make_index_sequence<S>(), ptr)
     {}
 
     template<typename T, size_t S>
-    template<typename X, typename>
+    template<typename X> requires std::convertible_to<X, T>
     constexpr vec<T, S>::vec(X* ptr) : vec(std::make_index_sequence<S>(), ptr)
     {}
 
@@ -40,7 +40,7 @@ namespace rnu {
     {}
 
     template<typename T, size_t S>
-    template<typename... Ts> requires (S > 1 && S == sizeof...(Ts)) && (std::is_convertible_v<Ts, T> && ...)
+    template<typename... Ts> requires (S > 1 && S == sizeof...(Ts)) && (std::convertible_to<Ts, T> && ...)
     constexpr vec<T, S>::vec(Ts&&... ts) noexcept : detail::vec_components<T, S>{ static_cast<value_type>(ts)... }
     {}
 
@@ -105,13 +105,13 @@ namespace rnu {
     template<typename T, size_t S>
     constexpr typename vec<T, S>::pointer vec<T, S>::data() noexcept
     {
-        return this->components;
+        return std::data(this->components);
     }
 
     template<typename T, size_t S>
     constexpr typename vec<T, S>::const_pointer vec<T, S>::data() const noexcept
     {
-        return this->components;
+        return std::data(this->components);
     }
 
     template<typename T, size_t S>
@@ -123,7 +123,7 @@ namespace rnu {
     template<typename T, size_t S>
     constexpr void vec<T, S>::fill(const T& value)
     {
-        std::fill_n(this->components, S, value);
+        std::fill(begin(), end(), value);
     }
 
 }
