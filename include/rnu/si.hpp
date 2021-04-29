@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef RNU_SI_HPP
+#define RNU_SI_HPP
+
 #include <bit>
 #include <tuple>
 #include <numeric>
@@ -263,8 +266,7 @@ namespace rnu::units
     using compound = base::unit_t<
         decltype(base::detail::multiply_and_normalize<typename Nom::descriptor...>()),
         base::fraction_mul_var<typename Nom::fraction...>,
-        std::common_type_t<typename Nom::scalar_type...>
-    >;
+        std::common_type_t<typename Nom::scalar_type...>>;
 
     template<typename... Nom>
     using inverse = typename compound<Nom...>::inverse;
@@ -292,6 +294,9 @@ namespace rnu::units
         enum class substance_amount;
     }
 
+    template<typename T, typename V>
+    concept same_as = std::is_arithmetic_v<base::dissolve_unit_t<compound<T, inverse<V>>>>;
+
     template<typename Unit, typename Fraction> using as_fract = base::unit_t<typename Unit::descriptor, base::fraction_mul<typename Unit::fraction, Fraction>, typename Unit::scalar_type>;
     template<typename Unit> using nano = as_fract<Unit, fract_nano>;
     template<typename Unit> using micro = as_fract<Unit, fract_micro>;
@@ -305,8 +310,8 @@ namespace rnu::units
     template<typename Unit> using mega = as_fract<Unit, fract_mega>;
     template<typename Unit> using giga = as_fract<Unit, fract_giga>;
 
-    template<typename Scalar> using t_gram = base::unit_t<base::descriptor_t<std::tuple<base_descriptors::mass>>, fract_unity, Scalar>;
-    template<typename Scalar> using t_kilogram = kilo<t_gram<Scalar>>;
+    template<typename Scalar> using t_kilogram = base::unit_t<base::descriptor_t<std::tuple<base_descriptors::mass>>, fract_kilo, Scalar>;
+    template<typename Scalar> using t_gram = milli<t_kilogram<Scalar>>;
     template<typename Scalar> using t_ton = kilo<t_kilogram<Scalar>>;
     template<typename Scalar> using t_candela = base::unit_t<base::descriptor_t<std::tuple<base_descriptors::luminosity>>, fract_unity, Scalar>;
     template<typename Scalar> using t_second = base::unit_t<base::descriptor_t<std::tuple<base_descriptors::time>>, fract_unity, Scalar>;
@@ -320,6 +325,24 @@ namespace rnu::units
     template<typename Scalar> using t_newton = compound<t_kilogram<Scalar>, t_meter<Scalar>, inverse<t_second<Scalar>, t_second<Scalar>>>;
     template<typename Scalar> using t_pascal = compound<t_newton<Scalar>, inverse<t_meter<Scalar>, t_meter<Scalar>>>;
     template<typename Scalar> using t_bar = hecto<kilo<t_pascal<Scalar>>>;
+
+    template<typename Scalar> using t_joule = compound<t_newton<Scalar>, t_meter<Scalar>>;
+    template<typename Scalar> using t_watt = compound<t_joule<Scalar>, inverse<t_second<Scalar>>>;
+    template<typename Scalar> using t_volt = compound<t_watt<Scalar>, inverse<t_ampere<Scalar>>>;
+    template<typename Scalar> using t_ohm = compound<t_volt<Scalar>, inverse<t_ampere<Scalar>>>;
+    template<typename Scalar> using t_coulomb = compound<t_ampere<Scalar>, t_second<Scalar>>;
+    template<typename Scalar> using t_farad = compound<t_coulomb<Scalar>, inverse<t_volt<Scalar>>>;
+    template<typename Scalar> using t_henry = compound<t_ohm<Scalar>, t_second<Scalar>>;
+    template<typename Scalar> using t_tesla = compound<t_newton<Scalar>, inverse<t_ampere<Scalar>, t_meter<Scalar>>>;
+    template<typename Scalar> using t_weber = compound<t_volt<Scalar>, t_second<Scalar>>;
+    template<typename Scalar> using t_gauss = milli<deci<t_tesla<Scalar>>>;
+    template<typename Scalar> using t_maxwell = compound<t_gauss<Scalar>, centi<t_meter<Scalar>>, centi<t_meter<Scalar>>>;
+    template<typename Scalar> using t_biot = deca<t_ampere<Scalar>>;
+
+    template<typename Scalar> using t_becquerel = inverse<t_second<Scalar>>;
+    template<typename Scalar> using t_rutherford = mega<t_becquerel<Scalar>>;
+    template<typename Scalar> using t_curie = as_fract<giga<t_becquerel<Scalar>>, base::fraction_t<37>>;
+    template<typename Scalar> using t_roentgen = as_fract<compound<t_coulomb<Scalar>, inverse<t_kilogram<Scalar>>>, base::reduced_fraction<258, 1000000>>;
 
     namespace imperial
     {
@@ -384,10 +407,25 @@ namespace rnu::units
     using mol = t_mol<double>;
     using minute = t_minute<double>;
     using hour = t_hour<double>;
-
     using newton = t_newton<double>;
     using pasc = t_pascal<double>;
     using bar = t_bar<double>;
+    using joule = t_joule<double>;
+    using watt = t_watt<double>;
+    using volt = t_volt<double>;
+    using ohm = t_ohm<double>;
+    using coulomb = t_coulomb<double>;
+    using farad = t_farad<double>;
+    using henry = t_henry<double>;
+    using tesla = t_tesla<double>;
+    using weber = t_weber<double>;
+    using gauss = t_gauss<double>;
+    using maxwell = t_maxwell<double>;
+    using biot = t_biot<double>;
+    using becquerel = t_becquerel<double>;
+    using rutherford = t_rutherford<double>;
+    using curie = t_curie<double>;
+    using roentgen = t_roentgen<double>;
 
     using fgram = t_gram<float>;
     using fkilogram = t_kilogram<float>;
@@ -400,8 +438,29 @@ namespace rnu::units
     using fmol = t_mol<float>;
     using fminute = t_minute<float>;
     using fhour = t_hour<float>;
-
     using fnewton = t_newton<float>;
     using fpascal = t_pascal<float>;
     using fbar = t_bar<float>;
+    using fjoule = t_joule<float>;
+    using fwatt = t_watt<float>;
+    using fvolt = t_volt<float>;
+    using fohm = t_ohm<float>;
+    using fcoulomb = t_coulomb<float>;
+    using ffarad = t_farad<float>;
+    using fhenry = t_henry<float>;
+    using ftesla = t_tesla<float>;
+    using fweber = t_weber<float>;
+    using fgauss = t_gauss<float>;
+    using fmaxwell = t_maxwell<float>;
+    using fbiot = t_biot<float>;
+    using fbecquerel = t_becquerel<float>;
+    using frutherford = t_rutherford<float>;
+    using fcurie = t_curie<float>;
+    using froentgen = t_roentgen<float>;
+
+    namespace constants {
+      template<typename Scalar> constexpr inverse<t_mol<Scalar>> avogadro{ 6.02214076e23 };
+    }
 }
+
+#endif // RNU_SI_HPP

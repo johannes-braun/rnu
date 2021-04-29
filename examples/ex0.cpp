@@ -1,21 +1,27 @@
-#include <iostream>
-#include <chrono>
-#include <functional>
-#include <rnu/math/math.hpp>
-#include <rnu/si.hpp>
+#include "vec.hpp"
+
+#include <tuple>
 
 int main(int argc, char** argv)
-{
-  namespace si = rnu::units;
+{ 
+  rnu2::vec<float, 4> vector4(-3, -2, -1, 0);
+  rnu2::vec<float, 8> vector8(vector4, 2, 3, 4, 0.3);
+  rnu2::vec<int, 2> vector2(vector4);
 
-  rnu::vec3 vector;
-  rnu::vec<rnu::vec3, 3> vecs{ rnu::vec3{1, -1, 1}, rnu::vec3{1, 3, 1}, rnu::vec3{-3, -65, 1} };
-  rnu::mat4 wuw{ 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 };
-  auto x = rnu::sqrt(wuw);
+  vector2 += 89 & vector2;
+  vector2 *= 89 & -!~vector2;
+  vector2 -= 89;
+  vector2 /= 89;
+  vector2 %= 89;
+  vector2 >>= 89;
+  vector2 <<= 89;
+  vector2 |= 89;
+  vector2 ^= 89;
 
-  auto ayy = si::kilo<si::t_kelvin<int>>{ 1 } < si::kelvin{ 5 };
+  ++vector2;
+  vector2++;
 
+  auto a = apply(sqrt, vector2);
 
-  __debugbreak();
   return 0;
 }

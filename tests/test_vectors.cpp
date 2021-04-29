@@ -111,13 +111,6 @@ TEST_CASE("Basic Vector Functions")
     }
 }
 
-namespace rnu::detail2 {
-  template<typename A, typename B, typename C>
-    struct value_type_impl<rnu::units::base::unit_t<A, B, C>> {
-      using type = rnu::units::base::unit_t<A, B, C>;
-    };
-}
-
 TEST_CASE("More of the same")
 {
   rnu::vec<rnu::units::meter, 2> size;

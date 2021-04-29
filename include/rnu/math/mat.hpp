@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef RNU_MATH_MAT_HPP
+#define RNU_MATH_MAT_HPP
+
 #include "mat_type.hpp"
 #include <cstdint>
 
@@ -46,17 +49,17 @@ namespace rnu
     using mat3ui64 = mat3_t<std::uint64_t>;
     using mat4ui64 = mat4_t<std::uint64_t>;
 
-    template<std::floating_point T>
-    [[nodiscard]] constexpr auto translation(vec3_t<T> vector) noexcept {
+    template<typename T>
+    constexpr mat4_t<T> translation(vec3_t<T> vector) noexcept {
         vec4 const hom(vector.x, vector.y, vector.z, 1);
         return mat4_t<T>{ {1, 0, 0, 0}, { 0, 1, 0, 0 }, { 0, 0, 1, 0 }, hom };
     }
-    template<std::floating_point T>
-    [[nodiscard]] constexpr auto rotation(quat_t<T> quat) noexcept {
-        return mat4_t<T>(quat.matrix());
+    template<quaternion_type T>
+    constexpr mat4_t<typename T::value_type> rotation(T quat) noexcept {
+        return mat4_t<typename T::value_type>(quat.matrix());
     }
-    template<std::floating_point T>
-    [[nodiscard]] constexpr auto scale(vec3_t<T> scales) noexcept {
+    template<typename T>
+    constexpr mat4_t<T> scale(vec3_t<T> scales) noexcept {
         mat4_t<T> result;
         result.at(0, 0) = scales.x;
         result.at(1, 1) = scales.y;
@@ -64,3 +67,5 @@ namespace rnu
         return result;
     }
 }
+
+#endif // RNU_MATH_MAT_HPP

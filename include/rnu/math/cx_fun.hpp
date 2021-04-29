@@ -1,4 +1,6 @@
 #pragma once
+#ifndef RNU_MATH_CX_FUN_HPP
+#define RNU_MATH_CX_FUN_HPP
 
 #include <bit>
 #include <cinttypes>
@@ -354,3 +356,4 @@ namespace rnu::cx
     return T(rad * T(180) * std::numbers::inv_pi_v<double>);
   }
 }
+#endif RNU_MATH_CX_FUN_HPP

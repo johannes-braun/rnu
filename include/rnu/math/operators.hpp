@@ -1,46 +1,10 @@
 #pragma once
 
-#include "vec_type.hpp"
-#include "mat_type.hpp"
-#include "quat_type.hpp"
+#ifndef RNU_MATH_OPERATORS_HPP
+#define RNU_MATH_OPERATORS_HPP
 
 namespace rnu
 {
-  namespace detail2 {
-    template<typename... Ts>
-    concept all_vectors_or_scalar = ((vector_type<std::decay_t<Ts>> || scalar_type<std::decay_t<Ts>>) && ...);
-
-    template<typename... Ts>
-    concept any_vector_type = all_vectors_or_scalar<Ts...> && (vector_type<std::decay_t<Ts>> || ...);
-  }
-
-    template<typename Type, typename... VectorTypes>
-    concept dimensionally_equal = (vector_type<std::decay_t<Type>> &&
-        (vector_type< std::decay_t<VectorTypes>> && ...) &&
-        ((std::decay_t < Type>::component_count == std::decay_t < VectorTypes>::component_count) && ...)) ||
-        (matrix_type< std::decay_t<Type>> &&
-            (matrix_type< std::decay_t<VectorTypes>> && ...) &&
-            ((std::decay_t < Type>::rows == std::decay_t < VectorTypes>::rows) && ...) &&
-            ((std::decay_t<Type>::cols == std::decay_t < VectorTypes>::cols) && ...));
-
-    template<typename Head, typename... Tail>
-    using head_t = std::decay_t<Head>;
-
-    template<typename T>
-    using reference_type = std::conditional_t<std::is_const_v<std::remove_reference_t<T>>, typename std::decay_t<T>::const_reference, typename std::decay_t<T>::reference>;
-
-    /// element_wise
-    /// * Takes N vectors
-    /// * The vector sizes are equal
-    /// * Takes functor with N parameters
-    /// * The value type of the i'th vector is convertible to the i'th parameter of the functor
-    /// * The function never returns by-ref
-    /// * If the functor has a return type, the function itself returns a vector with the common size and the return type of the function with const, volatile and references removed.
-    /// * Otherwise the function returns void
-
-    template<typename... VectorTypes>
-    concept vector_types_compatible = (vector_type<std::decay_t<VectorTypes>> && ...) && dimensionally_equal<VectorTypes...>;
-
 #define define_binary_const_callable(Name, Op) \
     template<typename Lhs, typename Rhs = Lhs> requires requires{ {std::declval<Lhs>() Op std::declval<Rhs>()}; } \
     struct Name { \
@@ -96,3 +60,5 @@ namespace rnu
 #undef define_unary_const_callable
 }
 #include "mat_op.inl.hpp"
+
+#endif // RNU_MATH_OPERATORS_HPP

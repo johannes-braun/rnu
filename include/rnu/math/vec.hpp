@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef RNU_MATH_VEC_HPP
+#define RNU_MATH_VEC_HPP
+
 #include "vec_type.hpp"
 #include <cstdint>
 
@@ -58,3 +61,5 @@ namespace rnu {
     using vec3ui64 = vec3_t<uint64_t>;
     using vec4ui64 = vec4_t<uint64_t>;
 }
+
+#endif // RNU_MATH_VEC_HPP

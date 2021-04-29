@@ -1,4 +1,8 @@
 #pragma once
+
+#ifndef RNU_MATH_VEC_OP_HPP
+#define RNU_MATH_VEC_OP_HPP
+
 #include "vec_type.hpp"
 #include "operators.hpp"
 #include <cmath>
@@ -12,8 +16,14 @@
 
 namespace rnu
 {
-  namespace detail2
+  namespace detail
   {
+    template<typename... Ts>
+    concept all_vectors_or_scalar = ((vector_type<std::decay_t<Ts>> || scalar_type<std::decay_t<Ts>>) && ...);
+
+    template<typename... Ts>
+    concept any_vector_type = all_vectors_or_scalar<Ts...> && (vector_type<std::decay_t<Ts>> || ...);
+
     template<typename T> requires requires(T t, size_t i) { {t.col(i)}; }
     constexpr decltype(auto) get(T& t, size_t index)
     {
@@ -87,42 +97,42 @@ namespace rnu
     };
 
     template<typename Callable, typename... Ts>
-    constexpr auto apply(Callable callable, Ts&&... ts) requires suitable_operands<Callable, Ts...> {
+    constexpr auto apply_impl(Callable callable, Ts&&... ts) requires suitable_operands<Callable, Ts...> {
       constexpr auto s = common_size<Ts...>();
 
-      if constexpr (!(vector_type<std::decay_t<decltype(detail2::get(std::declval<Ts>(), 0))>> || ...))
+      if constexpr (!(vector_type<std::decay_t<decltype(detail::get(std::declval<Ts>(), 0))>> || ...))
       {
-        using ty = std::decay_t<decltype(callable(detail2::get(ts, 0)...))>;
+        using ty = std::decay_t<decltype(callable(detail::get(ts, 0)...))>;
         if constexpr (s == 1)
-          return callable(detail2::get(ts, 0)...);
+          return callable(detail::get(ts, 0)...);
         else if constexpr (std::same_as<ty, void>)
         {
           for (size_t i = 0; i < s; ++i)
-            callable(detail2::get(ts, i)...);
+            callable(detail::get(ts, i)...);
         }
         else
         {
           vec<ty, s> r{};
           for (size_t i = 0; i < s; ++i) {
-            r[i] = callable(detail2::get(ts, i)...);
+            r[i] = callable(detail::get(ts, i)...);
           }
           return r;
         }
       }
       else
       {
-        using ty = std::decay_t<decltype(detail2::apply<Callable>(callable, detail2::get(ts, 0)...))>;
+        using ty = std::decay_t<decltype(detail::apply_impl<Callable>(callable, detail::get(ts, 0)...))>;
 
         if constexpr (std::same_as<ty, void>)
         {
           for (size_t i = 0; i < s; ++i)
-            detail2::apply<Callable>(callable, detail2::get(ts, i)...);
+            detail::apply_impl<Callable>(callable, detail::get(ts, i)...);
         }
         else
         {
           vec<ty, s> r{};
           for (size_t i = 0; i < s; ++i) {
-            r[i] = detail2::apply<Callable>(callable, detail2::get(ts, i)...);
+            r[i] = detail::apply_impl<Callable>(callable, detail::get(ts, i)...);
           }
           return r;
         }
@@ -130,40 +140,40 @@ namespace rnu
     }
   }
   template<typename Callable, typename... Ts>
-  constexpr auto apply(Callable callable, Ts&&... ts) requires detail2::suitable_operands<Callable, Ts...> {
-    return detail2::apply(callable, std::forward<Ts>(ts)...);
+  constexpr auto apply(Callable callable, Ts&&... ts) requires detail::suitable_operands<Callable, Ts...> {
+    return detail::apply_impl(callable, std::forward<Ts>(ts)...);
   }
 
 #define make_fun1(name, parent, a)\
   template<typename Q>\
-  [[nodiscard]] constexpr decltype(auto) name(Q&& a) requires requires(detail2::value_type<Q> a) { { parent(a) }; }\
-  { return detail2::apply([](auto&&... v) { return parent(v...); }, a); }
+  [[nodiscard]] constexpr decltype(auto) name(Q&& a) requires requires(detail::value_type<Q> a) { { parent(a) }; }\
+  { return apply([](auto&&... v) { return parent(v...); }, a); }
 
 #define make_fun1_checked(name, parent, a)\
   template<typename Q>\
-  [[nodiscard]] constexpr decltype(auto) name(Q&& a) requires requires(detail2::value_type<Q> a) { { parent(a) }; } && detail2::any_vector_type<Q>\
-  { return detail2::apply([](auto&&... v) { return parent(v...); }, a); }
+  [[nodiscard]] constexpr decltype(auto) name(Q&& a) requires requires(detail::value_type<Q> a) { { parent(a) }; } && detail::any_vector_type<Q>\
+  { return apply([](auto&&... v) { return parent(v...); }, a); }
 
 #define make_fun2(name, parent, a, b)\
   template<typename Q, typename R>\
-  [[nodiscard]] constexpr decltype(auto) name(Q&& a, R&& b) requires requires(detail2::value_type<Q> a, detail2::value_type<R> b) { { parent(a, b) }; }\
-  { return detail2::apply([](auto&&... v) { return parent(v...); }, a, b); }\
+  [[nodiscard]] constexpr decltype(auto) name(Q&& a, R&& b) requires requires(detail::value_type<Q> a, detail::value_type<R> b) { { parent(a, b) }; }\
+  { return apply([](auto&&... v) { return parent(v...); }, a, b); }\
   template<typename Q, typename R>\
-  [[nodiscard]] constexpr decltype(auto) name(Q const& a, R const& b) requires requires(detail2::value_type<Q> const a, detail2::value_type<R> const b) { { parent(a, b) }; }\
-  { return detail2::apply([](auto&&... v) { return parent(v...); }, a, b); }
+  [[nodiscard]] constexpr decltype(auto) name(Q const& a, R const& b) requires requires(detail::value_type<Q> const a, detail::value_type<R> const b) { { parent(a, b) }; }\
+  { return apply([](auto&&... v) { return parent(v...); }, a, b); }
 
 #define make_fun2_checked(name, parent, a, b)\
   template<typename Q, typename R>\
-  [[nodiscard]] constexpr decltype(auto) name(Q&& a, R&& b) requires requires(detail2::value_type<Q> a, detail2::value_type<R> b) { { parent(a, b) }; } && detail2::any_vector_type<Q, R>\
-  { return detail2::apply([](auto&&... v) { return parent(v...); }, a, b); } \
+  [[nodiscard]] constexpr decltype(auto) name(Q&& a, R&& b) requires requires(detail::value_type<Q> a, detail::value_type<R> b) { { parent(a, b) }; } && detail::any_vector_type<Q, R>\
+  { return apply([](auto&&... v) { return parent(v...); }, a, b); } \
   template<typename Q, typename R>\
-  [[nodiscard]] constexpr decltype(auto) name(Q const& a, R const& b) requires requires(detail2::value_type<Q> const a, detail2::value_type<R> const b) { { parent(a, b) }; } && detail2::any_vector_type<Q, R>\
-  { return detail2::apply([](auto&&... v) { return parent(v...); }, a, b); }
+  [[nodiscard]] constexpr decltype(auto) name(Q const& a, R const& b) requires requires(detail::value_type<Q> const a, detail::value_type<R> const b) { { parent(a, b) }; } && detail::any_vector_type<Q, R>\
+  { return apply([](auto&&... v) { return parent(v...); }, a, b); }
 
 #define make_fun3(name, parent, a, b, c)\
   template<typename Q, typename R, typename S>\
-  [[nodiscard]] constexpr decltype(auto) name(Q&& a, R&& b, S&& c) requires requires(detail2::value_type<Q> a, detail2::value_type<R> b, detail2::value_type<S> c) { { parent(a, b, c) }; }\
-  { return detail2::apply([](auto&&... v) { return parent(v...); }, a, b, c); }
+  [[nodiscard]] constexpr decltype(auto) name(Q&& a, R&& b, S&& c) requires requires(detail::value_type<Q> a, detail::value_type<R> b, detail::value_type<S> c) { { parent(a, b, c) }; }\
+  { return apply([](auto&&... v) { return parent(v...); }, a, b, c); }
 
 #define expand_one_operator1(op, name)\
   make_fun1_checked(operator op, rnu::call_##name, value);
@@ -173,8 +183,8 @@ namespace rnu
 
 #define make_assign(op)\
   template<typename Q, typename R>\
-  constexpr decltype(auto) operator op=(Q& a, R&& b) requires requires(detail2::value_type<Q> a, detail2::value_type<R> b) { { a op= b }; } && detail2::any_vector_type<Q>\
-  { a = detail2::apply([](auto&& v, auto&& w) { return v op= w; }, a, b); return a; }
+  constexpr decltype(auto) operator op=(Q& a, R&& b) requires requires(detail::value_type<Q> a, detail::value_type<R> b) { { a op= b }; } && detail::any_vector_type<Q>\
+  { a = apply([](auto&& v, auto&& w) { return v op= w; }, a, b); return a; }
 
 #define expand_two_operators2(op, name) \
   make_fun2_checked(operator op, rnu::call_##name, lhs, rhs); \
@@ -227,20 +237,20 @@ namespace rnu
   expand_one_operator1(~, bit_not);
   expand_one_operator1(-, negate);
 
-  template<vector_type V> requires requires(detail2::value_type<V>& v) { { v += 1}; }
+  template<vector_type V> requires requires(detail::value_type<V>& v) { { v += 1}; }
   constexpr V& operator++(V& v) noexcept { return v += 1; }
 
-  template<vector_type V> requires requires(detail2::value_type<V>& v) { {v += 1}; }
+  template<vector_type V> requires requires(detail::value_type<V>& v) { {v += 1}; }
   [[nodiscard]] constexpr V operator++(V& v, int) noexcept { V result = v; v += 1; return result; }
 
-  template<vector_type V> requires requires(detail2::value_type<V>& v) { {v -= 1}; }
+  template<vector_type V> requires requires(detail::value_type<V>& v) { {v -= 1}; }
   constexpr V& operator--(V& v) noexcept { return v -= 1; }
 
-  template<vector_type V> requires requires(detail2::value_type<V>& v) { {v -= 1}; }
+  template<vector_type V> requires requires(detail::value_type<V>& v) { {v -= 1}; }
   [[nodiscard]] constexpr V operator--(V& v, int) noexcept { V result = v; v -= 1; return result; }
 
-
-
+#undef make_fun2_checked
+#undef make_assign
 #undef expand_one_operator1
 #undef expand_one_operator2
 #undef expand_two_operators2
@@ -248,7 +258,6 @@ namespace rnu
 #undef make_fun2
 #undef make_fun3
 }
-#include "vec_apply.hpp"
-
-#include "math_func.inl.hpp"
 #include "vec_math.inl.hpp"
+
+#endif // RNU_MATH_VEC_OP_HPP

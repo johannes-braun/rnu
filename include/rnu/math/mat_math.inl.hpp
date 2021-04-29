@@ -1,8 +1,8 @@
 
 namespace rnu
 {
-    template<matrix_type M> requires (M::cols == M::rows)
-        constexpr M& transpose_inplace(M& m) noexcept
+    template<matrix_type M>
+        constexpr M& transpose_inplace(M& m) noexcept requires (M::cols == M::rows)
     {
         for (size_t c = 0; c < M::cols; ++c)
             for (size_t r = c + 1; r < M::rows; ++r)

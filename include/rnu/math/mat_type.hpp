@@ -1,4 +1,6 @@
 #pragma once
+#ifndef RNU_MATH_MAT_TYPE_HPP
+#define RNU_MATH_MAT_TYPE_HPP
 
 #include <array>
 #include <algorithm>
@@ -6,172 +8,93 @@
 
 namespace rnu
 {
-    template<typename T, size_t Cols, size_t Rows>
-    class mat {
-    public:
-        constexpr static size_t cols = Cols;
-        constexpr static size_t rows = Rows;
+  template<typename T, size_t Cols, size_t Rows>
+  class mat;
 
-        using reference = T&;
-        using const_reference = const T&;
-        using value_type = T;
-        using size_type = size_t;
-        using difference_type = ptrdiff_t;
-        using pointer = T*;
-        using const_pointer = const T*;
-        using scalar_type = scalar_type_of_t<value_type>;
-        using column_type = vec<T, Rows>;
-        
-        template<typename... ScalarList>
-        constexpr static bool scalars_compatible = (sizeof...(ScalarList) == Cols * Rows) &&
-            (std::is_convertible_v<ScalarList, value_type> && ...);
+  namespace detail
+  {
+    template<typename V, size_t Cols, size_t Rows>
+    concept vector_like = vector_type<V> && std::min(Cols, Rows) == 1 &&
+      std::max(Cols, Rows) == V::component_count;
 
-        [[nodiscard]] constexpr mat() noexcept;
-        
-        template<typename... Scalars> requires scalars_compatible<Scalars...>
-        [[nodiscard]] constexpr mat(Scalars&&... scalars)
-            : m_linear_data{ static_cast<value_type>(scalars)... }
-        {
+    template<typename V, typename M>
+    concept vector_matrix = matrix_type<M> && detail::vector_like<V, M::cols, M::rows>;
+  }
 
-        }
+  template<typename T, size_t Cols, size_t Rows>
+  class mat {
+  public:
+    constexpr static size_t cols = Cols;
+    constexpr static size_t rows = Rows;
 
-        [[nodiscard]] constexpr mat(std::initializer_list<column_type> values) noexcept;
+    using reference = T&;
+    using const_reference = const T&;
+    using value_type = T;
+    using size_type = size_t;
+    using difference_type = ptrdiff_t;
+    using pointer = T*;
+    using const_pointer = const T*;
+    using scalar_type = scalar_type_of_t<value_type>;
+    using column_type = vec<T, Rows>;
 
-        template<matrix_type Other>
-        [[nodiscard]] constexpr mat(Other const& other) noexcept
-            requires(Other::cols != cols || Other::rows != rows)
-            : mat()
-        {
-            for (size_t c = 0; c < std::min(cols, Other::cols); ++c)
-            {
-                for (size_t r = 0; r < std::min(rows, Other::rows); ++r)
-                {
-                    at(c, r) = other.at(c, r);
-                }
-            }
-        }
+    template<typename T>
+    constexpr static bool vector_matrix = detail::vector_matrix<T, mat>;
 
-        template<vector_type V>
-        [[nodiscard]] explicit constexpr mat(V v) noexcept
-            requires(std::min(Cols, Rows) == 1 && std::max(Cols, Rows) == V::component_count)
-        {
-            reinterpret_cast<V&>(*this) = v;
-        }
+    template<typename... ScalarList>
+    constexpr static bool scalars_compatible = (sizeof...(ScalarList) == Cols * Rows) &&
+      (std::is_convertible_v<ScalarList, value_type> && ...);
 
-        template<vector_type V>
-        requires(std::min(Cols, Rows) == 1 && std::max(Cols, Rows) == V::component_count)
-            [[nodiscard]] explicit constexpr operator V&() {
-            return reinterpret_cast<V&>(*this);
-        }
-        template<vector_type V>
-        requires(std::min(Cols, Rows) == 1 && std::max(Cols, Rows) == V::component_count)
-            [[nodiscard]] explicit constexpr operator V const&() const {
-            return reinterpret_cast<V const&>(*this);
-        }
+    [[nodiscard]] constexpr mat() noexcept;
 
-        [[nodiscard]] constexpr T& at(size_t col, size_t row);
-        [[nodiscard]] constexpr T const& at(size_t col, size_t row) const;
-        [[nodiscard]] constexpr value_type& element(size_t linear_index);
-        [[nodiscard]] constexpr value_type const& element(size_t linear_index) const;
-        [[nodiscard]] constexpr column_type& col(size_t col);
-        [[nodiscard]] constexpr column_type const& col(size_t col, size_t row) const;
+    [[nodiscard]] constexpr mat(T diag) noexcept;
 
-        [[nodiscard]] constexpr T* data() noexcept;
-        [[nodiscard]] constexpr T const* data() const noexcept;
-        [[nodiscard]] constexpr size_type size() const noexcept;
+    template<typename... Scalars>
+    [[nodiscard]] constexpr mat(Scalars&&... scalars)
+      requires scalars_compatible<Scalars...>;
 
-        [[nodiscard]] constexpr operator bool() noexcept
-            requires std::same_as<T, bool>
-        {
-            return std::any_of(data(), data() + size(), [](auto v) { return v; });
-        }
+    [[nodiscard]] constexpr mat(std::initializer_list<column_type> values) noexcept;
 
-    private:
-        void fill_diag(T value);
+    template<matrix_type Other>
+    [[nodiscard]] constexpr mat(Other const& other) noexcept
+      requires(Other::cols != cols || Other::rows != rows);
 
-        union {
-            std::array<column_type, Cols> m_data{};
-            std::array<value_type, Cols* Rows> m_linear_data;
-        };
+    template<typename V>
+    [[nodiscard]] explicit constexpr mat(V v) noexcept
+      requires vector_matrix<V>;
+
+    template<typename V>
+    [[nodiscard]] explicit constexpr operator V& ()
+      requires vector_matrix<V>;
+
+    template<typename V>
+    [[nodiscard]] explicit constexpr operator V const& () const
+      requires vector_matrix<V>;
+
+    [[nodiscard]] constexpr T& at(size_t col, size_t row);
+    [[nodiscard]] constexpr T const& at(size_t col, size_t row) const;
+    [[nodiscard]] constexpr value_type& element(size_t linear_index);
+    [[nodiscard]] constexpr value_type const& element(size_t linear_index) const;
+    [[nodiscard]] constexpr column_type& col(size_t col);
+    [[nodiscard]] constexpr column_type const& col(size_t col, size_t row) const;
+
+    [[nodiscard]] constexpr T* data() noexcept;
+    [[nodiscard]] constexpr T const* data() const noexcept;
+    [[nodiscard]] constexpr size_type size() const noexcept;
+
+    [[nodiscard]] constexpr operator bool() noexcept
+      requires std::same_as<T, bool>;
+
+  private:
+    void fill_diag(T value);
+
+    union {
+      std::array<column_type, Cols> m_data{};
+      std::array<value_type, Cols* Rows> m_linear_data;
     };
-
-
-    template<typename T, size_t Cols, size_t Rows>
-    constexpr T& mat<T, Cols, Rows>::at(size_t col, size_t row)
-    {
-        return m_data[col][row];
-    }
-    template<typename T, size_t Cols, size_t Rows>
-    constexpr T const& mat<T, Cols, Rows>::at(size_t col, size_t row) const
-    {
-        return m_data[col][row];
-    }
-    template<typename T, size_t Cols, size_t Rows>
-    constexpr typename mat<T, Cols, Rows>::column_type& mat<T, Cols, Rows>::col(size_t col)
-    {
-        return m_data[col];
-    }
-    template<typename T, size_t Cols, size_t Rows>
-    constexpr typename mat<T, Cols, Rows>::column_type const& mat<T, Cols, Rows>::col(size_t col, size_t row) const
-    {
-        return m_data[col];
-    }
-    template<typename T, size_t Cols, size_t Rows>
-    constexpr typename mat<T, Cols, Rows>::value_type& mat<T, Cols, Rows>::element(size_t linear_index)
-    {
-        return m_linear_data[linear_index];
-    }
-    template<typename T, size_t Cols, size_t Rows>
-    constexpr typename mat<T, Cols, Rows>::value_type const& mat<T, Cols, Rows>::element(size_t linear_index) const
-    {
-        return m_linear_data[linear_index];
-    }
-
-    template<typename T, size_t Cols, size_t Rows>
-    inline constexpr T* mat<T, Cols, Rows>::data() noexcept
-    {
-        return m_data[0].data();
-    }
-
-    template<typename T, size_t Cols, size_t Rows>
-    inline constexpr T const* mat<T, Cols, Rows>::data() const noexcept
-    {
-        return m_data[0].data();
-    }
-
-    template<typename T, size_t Cols, size_t Rows>
-    inline constexpr typename mat<T, Cols, Rows>::size_type mat<T, Cols, Rows>::size() const noexcept
-    {
-        return Cols * Rows;
-    }
-
-    template<typename T, size_t Cols, size_t Rows>
-    void mat<T, Cols, Rows>::fill_diag(T value)
-    {
-        for (size_t i = 0; i < std::min(Cols, Rows); ++i)
-            at(i, i) = value;
-    }
-
-    template<typename T, size_t Cols, size_t Rows>
-    constexpr mat<T, Cols, Rows>::mat() noexcept
-    {
-        fill_diag(T(1));
-    }
-
-    template<typename T, size_t Cols, size_t Rows>
-    constexpr mat<T, Cols, Rows>::mat(std::initializer_list<column_type> values) noexcept
-    {
-        auto output = m_data.begin();
-        auto iter = std::begin(values);
-
-        auto values_end = std::end(values);
-        auto output_end = m_data.end();
-        while (iter != values_end && output != output_end)
-        {
-            *(output++) = *(iter++);
-        }
-    }
+  };
 }
 
-#include "mat_apply.inl.hpp"
+#include "mat_type.inl.hpp"
 #include "mat_math.inl.hpp"
+
+#endif // RNU_MATH_MAT_TYPE_HPP

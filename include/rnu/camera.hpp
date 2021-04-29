@@ -1,10 +1,15 @@
 #pragma once
+#ifndef RNU_CAMERA_HPP
+#define RNU_CAMERA_HPP
+
 #include <optional>
-#include "math/math.hpp"
 #include <concepts>
+#include "math/quat_type.hpp"
+#include "math/mat.hpp"
+#include "math/vec.hpp"
 
 namespace rnu {
-    template<std::floating_point Float>
+    template<typename Float>
     class camera
     {
     public:
@@ -18,7 +23,7 @@ namespace rnu {
 
         constexpr void axis(float_type delta_seconds, float_type f, float_type b, float_type l, float_type r, float_type u, float_type d) noexcept
         {
-            m_translation += conj(m_rotation) * (delta_seconds * vec_type{
+            m_translation += rnu::conj(m_rotation) * (delta_seconds * vec_type{
                 (l-r), (d-u), (f-b)
             });
         }
@@ -36,8 +41,8 @@ namespace rnu {
 
                 const float_type x_delta = (x - m_last_x.value()) / 100.0f;
                 const float_type y_delta = (y - m_last_y.value()) / 100.0f;
-                const auto lr = quat_type(x_delta, { 0.f, float(!z_up), float(z_up) });
-                const auto ud = quat_type(y_delta, { 1.f, 0.f, 0.f });
+                const auto lr = quat_type({ 0.f, float(!z_up), float(z_up) }, x_delta);
+                const auto ud = quat_type({ 1.f, 0.f, 0.f }, y_delta);
 
                 m_rotation = ud * m_rotation * lr;
                 m_last_x = x;
@@ -49,13 +54,13 @@ namespace rnu {
             }
         }
 
-        [[nodiscard]] constexpr mat_type matrix(bool row_major) const noexcept
+        constexpr mat_type matrix(bool row_major) const noexcept
         {
             float_type qw = m_rotation[0];
             float_type qx = m_rotation[1];
             float_type qy = m_rotation[2];
             float_type qz = m_rotation[3];
-            const float_type n = 1.0f / sqrt(qx * qx + qy * qy + qz * qz + qw * qw);
+            const float_type n = 1.0f / std::sqrt(qx * qx + qy * qy + qz * qz + qw * qw);
             qx *= n;
             qy *= n;
             qz *= n;
@@ -70,7 +75,7 @@ namespace rnu {
                 2.0f * qy * qz + 2.0f * qx * qw, 1.0f - 2.0f * qx * qx - 2.0f * qy * qy,
                 t_rot[2], 0.0f, 0.0f, 0.0f, 1.0f };
             if (row_major)
-                transpose_inplace(result);
+                rnu::transpose_inplace(result);
             return result;
         }
 
@@ -119,4 +124,9 @@ namespace rnu {
         std::optional<float_type> m_last_x;
         std::optional<float_type> m_last_y;
     };
+
+    using cameraf = rnu::camera<float>;
+    using camerad = rnu::camera<double>;
 }
+
+#endif //RNU_CAMERA_HPP
