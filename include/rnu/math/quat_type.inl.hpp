@@ -1,3 +1,4 @@
+#include "cx_fun.hpp"
 namespace rnu
 {
   template<typename T>
@@ -8,7 +9,7 @@ namespace rnu
 
   template<typename T>
   [[nodiscard]] constexpr quat_t<T>::quat_t(angle_axis_type axis, T angle)
-    : quat_t(angle_axis_init_t{}, rnu::cos(T(angle / T(2))), rnu::sin(T(angle / T(2))) * static_cast<vec<T, 3>>(axis)) {}
+    : quat_t(angle_axis_init_t{}, cx::cos(T(angle / T(2))), cx::sin(T(angle / T(2))) * static_cast<vec<T, 3>>(axis)) {}
 
   template<typename T>
   [[nodiscard]] constexpr quat_t<T>::quat_t(angle_axis_init_t, T w, vec<T, 3> xyz) : components{ w, xyz.x, xyz.y, xyz.z } {}

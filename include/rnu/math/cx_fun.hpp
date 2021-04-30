@@ -7,6 +7,7 @@
 #include <numbers>
 #include <cmath>
 #include <type_traits>
+#include "traits.hpp"
 
 namespace rnu::cx
 {
@@ -348,12 +349,12 @@ namespace rnu::cx
   }
 
   template<typename T> requires requires(T t) { {t / T(180) * std::numbers::pi_v<double>}; }
-  [[nodiscard]] constexpr T radians(T deg) noexcept {
-    return T(deg / T(180) * std::numbers::pi_v<double>);
+  [[nodiscard]] constexpr auto radians(T deg) noexcept {
+    return to_float_t<T>(deg / to_float_t<T>(180) * std::numbers::pi_v<double>);
   }
   template<typename T> requires requires(T t) { { t * T(180)* std::numbers::inv_pi_v<double> }; }
-  [[nodiscard]] constexpr T degrees(T rad) noexcept {
-    return T(rad * T(180) * std::numbers::inv_pi_v<double>);
+  [[nodiscard]] constexpr auto degrees(T rad) noexcept {
+    return to_float_t<T>(rad * to_float_t<T>(180) * std::numbers::inv_pi_v<double>);
   }
 }
 #endif RNU_MATH_CX_FUN_HPP

@@ -5,11 +5,12 @@
 
 #include <array>
 #include <concepts>
-#include "vec_op.hpp"
+#include "vec.hpp"
+#include "traits.hpp"
 
 namespace rnu {
   template<typename T = float>
-  class quat_t {
+  struct quat_t {
   public:
     using reference = T&;
     using const_reference = const T&;
@@ -30,7 +31,7 @@ namespace rnu {
     using reverse_iterator = typename array_type::reverse_iterator;
     using const_reverse_iterator = typename array_type::const_reverse_iterator;
 
-    constexpr static size_t component_count = 4;
+    constexpr static size_t count = 4;
 
     [[nodiscard]] constexpr quat_t() noexcept = default;
     [[nodiscard]] constexpr quat_t(quat_t const& other) noexcept;
@@ -74,17 +75,17 @@ namespace rnu {
     };
   };
 
-  template<quaternion_type Q>
+  template<quaternion Q>
   [[nodiscard]] constexpr Q conj(const Q& q) noexcept
   {
     return Q(q.w, -q.x, -q.y, -q.z);
   }
-  template<quaternion_type Q>
+  template<quaternion Q>
   [[nodiscard]] constexpr auto norm(const Q& q) noexcept
   {
     return norm(vec<typename Q::value_type, 4>(q.w, q.x, q.y, q.z));
   }
-  template<quaternion_type Q>
+  template<quaternion Q>
   [[nodiscard]] constexpr auto normalize(Q q) noexcept
   {
     const auto n = norm(q);
@@ -94,7 +95,7 @@ namespace rnu {
     q.z /= n;
     return q;
   }
-  template<quaternion_type Q>
+  template<quaternion Q>
   [[nodiscard]] constexpr Q inverse(const Q& q) noexcept
   {
     auto c = conj(q);
