@@ -183,7 +183,7 @@ namespace rnu
 
     template<typename... Ts>
     constexpr vec(Ts&&... components)
-      requires (std::convertible_to<Ts, T> && ...)
+      requires (sizeof...(Ts) == count) && (std::convertible_to<Ts, T> && ...)
       : vec_base<T, S>(static_cast<T>(std::forward<Ts>(components))...)
     {
     }
@@ -201,16 +201,16 @@ namespace rnu
     }
 
     template<typename... Ts
-#if __INTELLISENSE__
-      , std::enable_if_t<
-#else
+//#if __INTELLISENSE__
+      //, std::enable_if_t<
+//#else
     > requires
-#endif
+//#endif
       ((std::less<size_t>{}(sizeof...(Ts), S)) && ((detail::count_v<Ts> +...) == S) && (recursively_convertible_to<Ts, T> && ...) && (std::less<size_t>{}(1, detail::count_v<Ts>) || ...))
-#if __INTELLISENSE__
-      , int > * = nullptr
-    >
-#endif
+//#if __INTELLISENSE__
+      //, int > * = nullptr
+    //>
+//#endif
       constexpr vec(Ts&&... compounds)
     {
       size_t index = 0;
@@ -245,9 +245,19 @@ namespace rnu
     [[nodiscard]] constexpr operator bool() const noexcept
       requires std::same_as<T, bool>
     {
-      for (size_t i = 0; i < size(); ++i)
-        if (!at(i)) return false;
-      return true;
+      return all();
+    }
+
+    [[nodiscard]] constexpr bool any() const noexcept requires std::same_as<T, bool> {
+      auto const* d = data();
+      auto const s = size();
+      return std::any_of(d, d + s, [](auto const& v) { return v; });
+    }
+
+    [[nodiscard]] constexpr bool all() const noexcept requires std::same_as<T, bool> {
+      auto const* d = data();
+      auto const s = size();
+      return std::all_of(d, d + s, [](auto const& v) { return v; });
     }
   };
 

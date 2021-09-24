@@ -69,6 +69,16 @@ namespace rnu {
     [[nodiscard]] constexpr const_reverse_iterator crbegin() const { return std::crbegin(this->components); }
     [[nodiscard]] constexpr const_reverse_iterator crend() const { return std::crend(this->components); }
 
+    [[nodiscard]] constexpr T* data() noexcept {
+      return components.data();
+    }
+    [[nodiscard]] constexpr T const* data() const noexcept {
+      return components.data();
+    }
+    [[nodiscard]] constexpr size_t size() noexcept {
+      return components.size();
+    }
+
     union {
       struct { T w, x, y, z; };
       std::array<T, 4> components{ 1, 0, 0, 0 };

@@ -193,6 +193,17 @@ namespace rnu
 
     }
 
+    template <typename V, size_t Oc, size_t Or>
+    requires(Oc > C && Or >= R) || (Oc >= C && Or > R) constexpr mat(mat<V, Oc, Or> const& other)
+        : mat(detail::traverse<C, R>([&](size_t c, size_t r) {
+            if (c < C && r < R)
+              return static_cast<T>(other[c][r]);
+            else if (c == r)
+              return T(1);
+            else
+              return T(0);
+          })) {}
+
     template<typename V, size_t Oc, size_t Or> requires (Oc < C&& Or <= R) || (Oc <= C && Or < R)
       constexpr mat(mat<V, Oc, Or> const& other) : mat(detail::traverse<C, R>([&](size_t c, size_t r) {
       if (c < Oc && r < Or)
@@ -243,6 +254,16 @@ namespace rnu
     [[nodiscard]] constexpr operator bool() const noexcept
       requires std::same_as<T, bool>
     {
+      return all();
+    }
+
+    [[nodiscard]] constexpr bool any() const noexcept requires std::same_as<T, bool> {
+      auto const* d = data();
+      auto const s = size();
+      return std::any_of(d, d + s, [](auto const& v) { return v; });
+    }
+
+    [[nodiscard]] constexpr bool all() const noexcept requires std::same_as<T, bool> {
       auto const* d = data();
       auto const s = size();
       return std::all_of(d, d + s, [](auto const& v) { return v; });

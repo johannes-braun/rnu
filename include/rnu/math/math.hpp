@@ -144,6 +144,15 @@ namespace rnu {
     return result;
   }
 
+  template <matrix Lhs, matrix Rhs>
+  [[nodiscard]] constexpr auto operator*(Lhs const& lhs, Rhs&& rhs) requires requires(Lhs m, Rhs v) {
+    v[0][0] * m[0][0] + v[0][0] * m[0][0];
+  } &&(std::decay_t<Lhs>::rows == std::decay_t<Rhs>::columns && std::decay_t<Lhs>::columns == std::decay_t<Rhs>::rows) {
+    constexpr auto rows = std::decay_t<Lhs>::rows;
+    constexpr auto columns = std::decay_t<Rhs>::columns;
+    return detail::traverse<rows, columns>([&](size_t c, size_t r) { return dot(lhs.row(r), rhs.col(c)); });
+  }
+
   template<matrix Lhs, matrix Rhs>
   [[nodiscard]] constexpr auto operator*(Lhs&& lhs, Rhs&& rhs)
     requires requires(Lhs m, Rhs v) { v[0][0] * m[0][0] + v[0][0] * m[0][0]; } &&
