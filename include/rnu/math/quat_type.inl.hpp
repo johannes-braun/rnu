@@ -2,7 +2,8 @@
 namespace rnu
 {
   template<typename T>
-  [[nodiscard]] constexpr quat_t<T>::quat_t(quat_t const& other) noexcept : components{ other.w, other.x, other.y, other.z } {}
+  template<typename U>
+  [[nodiscard]] constexpr quat_t<T>::quat_t(quat_t<U> const& other) noexcept : components{ T(other.w), T(other.x), T(other.y), T(other.z) } {}
 
   template<typename T>
   [[nodiscard]] constexpr quat_t<T>::quat_t(T w, T x, T y, T z) noexcept : components{ w, x, y, z } {}
@@ -41,6 +42,42 @@ namespace rnu
       static_cast<V>(x),
       static_cast<V>(y),
       static_cast<V>(z));
+  }
+
+  template<quaternion Rhs>
+  [[nodiscard]] constexpr auto operator-(Rhs const& rhs) noexcept {
+    using rhs_t = typename Rhs::value_type;
+    using result_t = decltype(-rhs_t{});
+
+    return quat_t<result_t>(
+      -rhs.w,
+      -rhs.x,
+      -rhs.y,
+      -rhs.z);
+  }
+  template<quaternion Lhs, quaternion Rhs>
+  [[nodiscard]] constexpr auto operator-(Lhs const& lhs, Rhs const& rhs) noexcept {
+    using lhs_t = typename Lhs::value_type;
+    using rhs_t = typename Rhs::value_type;
+    using result_t = decltype(lhs_t{} - rhs_t{});
+
+    return quat_t<result_t>(
+      lhs.w - rhs.w,
+      lhs.x - rhs.x,
+      lhs.y - rhs.y,
+      lhs.z - rhs.z);
+  }
+  template<quaternion Lhs, quaternion Rhs>
+  [[nodiscard]] constexpr auto operator+(Lhs const& lhs, Rhs const& rhs) noexcept {
+    using lhs_t = typename Lhs::value_type;
+    using rhs_t = typename Rhs::value_type;
+    using result_t = decltype(lhs_t{} + rhs_t{});
+
+    return quat_t<result_t>(
+      lhs.w + rhs.w,
+      lhs.x + rhs.x,
+      lhs.y + rhs.y,
+      lhs.z + rhs.z);
   }
 
   template<typename T>

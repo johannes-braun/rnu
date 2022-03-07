@@ -136,10 +136,10 @@ namespace rnu
 
   template<typename T, size_t C, size_t R>
   class mat {
-    static constexpr struct fill_sentinel_t {} fill;
-    static constexpr struct fill_all_sentinel_t {} fill_all;
-    static constexpr struct diag_sentinel_t {} diag;
-    static constexpr struct diag_fill_sentinel_t {} diag_fill;
+    static constexpr struct fill_sentinel_t {} fill{};
+    static constexpr struct fill_all_sentinel_t {} fill_all{};
+    static constexpr struct diag_sentinel_t {} diag{};
+    static constexpr struct diag_fill_sentinel_t {} diag_fill{};
 
   public:
     using value_type = T;
@@ -477,11 +477,15 @@ namespace rnu
     }
 
     template<matrix M>
-    constexpr M& transpose_inplace(M& m) noexcept requires (std::decay_t<M>::is_square)
+    constexpr M& transpose_inplace(M& m) noexcept requires (std::decay_t<M>::is_square && !std::is_const_v<M>)
     {
       for (size_t c = 0; c < std::decay_t<M>::columns; ++c)
         for (size_t r = c + 1; r < std::decay_t<M>::rows; ++r)
-          std::swap(m.at(c, r), m.at(r, c));
+        {
+          auto const val = m.at(r, c);
+          m.at(r, c) = m.at(c, r);
+          m.at(c, r) = val;
+        }
       return m;
     }
     template<matrix M>

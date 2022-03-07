@@ -22,6 +22,10 @@ public:
     m_translation += (m_rotation) * (delta_seconds * -vec_type{(l - r), (d - u), (f - b)});
   }
 
+  constexpr void axis(float_type delta_seconds, float_type f, float_type h, float_type v) noexcept {
+    m_translation += (m_rotation) * (delta_seconds * -vec_type{ h, v, f});
+  }
+
   constexpr void mouse(float_type x, float_type y, bool down, bool z_up = false) noexcept {
     if (down) {
       if (!m_last_x) {
@@ -43,14 +47,18 @@ public:
     }
   }
 
-  constexpr mat_type matrix(bool row_major) const noexcept {
+  constexpr mat_type matrix(bool row_major = false) const noexcept {
     rnu::mat4 mat(0.0f);
     mat.col(3) = rnu::vec4(m_translation, 0.0f);
-    return inverse(mat + mat4(normalize(m_rotation).matrix()));
+    auto result = inverse(mat + mat4(normalize(m_rotation).matrix()));
+
+    if (row_major)
+      transpose_inplace(result);
+    return result;
   }
 
   [[nodiscard]] constexpr static mat_type projection(
-      float_type fovy_radians, float_type aspect, float_type near, float_type far, bool row_major) noexcept {
+      float_type fovy_radians, float_type aspect, float_type near, float_type far, bool row_major = false) noexcept {
     const float_type theta = fovy_radians * float_type(0.5);
     const float_type range = far - near;
     const float_type invtan = static_cast<float_type>(1.0 / tan(theta));
@@ -59,8 +67,8 @@ public:
     result.at(0, 0) = invtan / aspect;
     result.at(1, 1) = invtan;
     result.at(2, 2) = -(near + far) / range;
-    result.at(3, 2) = -1;
-    result.at(2, 3) = -2 * near * far / range;
+    result.at(2, 3) = -1;
+    result.at(3, 2) = -2 * near * far / range;
     result.at(3, 3) = 0;
 
     if (row_major)

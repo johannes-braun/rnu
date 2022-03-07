@@ -1,9 +1,22 @@
 #include <rnu/math/math.hpp>
 #include <rnu/camera.hpp>
 #include <tuple>
+#include <rnu/thread_pool.hpp>
 
 int main(int argc, char** argv)
 { 
+  rnu::thread_pool pool(4);
+
+  auto x123 = pool.run_async([] { return 293; });
+  auto x1234 = pool.run_async([] { return 123; });
+  auto x21415 = pool.run_async([] { return 51325; });
+  auto x21344 = pool.run_async([] { return 6223; });
+
+  auto asdgws = x123.get();
+  auto asdg43 = x1234.get();
+  auto asd623 = x21415.get();
+  auto ashhhj = x21344.get();
+
   rnu::vec<float, 4> vector4(-3, -2, -1, 0);
   rnu::vec<float, 8> vector8(vector4, 2, 3, 4, 0.3);
   rnu::vec<int, 2> vector2(vector4);

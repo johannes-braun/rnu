@@ -1,10 +1,15 @@
 cmake_minimum_required(VERSION 3.13)
 
 project(rnu LANGUAGES CXX VERSION 1.0)
-add_library(rnu INTERFACE)
-target_include_directories(rnu INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_compile_features(rnu INTERFACE cxx_std_20)
-target_sources(rnu INTERFACE cpp.hint)
+add_library(rnu STATIC)
+target_include_directories(rnu PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_compile_features(rnu PUBLIC cxx_std_20)
+target_sources(rnu PUBLIC cpp.hint)
+target_sources(rnu PUBLIC 
+  src/thread_pool.cpp
+  src/ecs.cpp
+  src/system.cpp
+)
 add_library(rnu::rnu ALIAS rnu)
 
 option(RNU_BUILD_EXAMPLES "Build example executables." OFF)
@@ -12,4 +17,7 @@ if(RNU_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif(RNU_BUILD_EXAMPLES)
 
-add_subdirectory(tests)
+option(RNU_BUILD_TESTS "Build test executables." OFF)
+if(RNU_BUILD_TESTS)
+  add_subdirectory(tests)
+endif(RNU_BUILD_TESTS)
