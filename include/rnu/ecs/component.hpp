@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace myrt {
+namespace rnu {
 enum class id_t : uint64_t {};
 struct component_base;
 using entity_handle = void*;

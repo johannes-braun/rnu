@@ -1,6 +1,6 @@
 #pragma once
 
-namespace myrt {
+namespace rnu {
 namespace flags_operators {
   template <typename E, typename = std::underlying_type_t<E>> flags<E> operator|(E flag, E value) {
     return flags<E>(flag) | value;

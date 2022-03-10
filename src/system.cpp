@@ -1,6 +1,6 @@
 #include <rnu/ecs/system.hpp>
 
-namespace myrt {
+namespace rnu {
 void system_base::add_component_type(id_t id, component_flags flags) {
   _component_types.push_back(id);
   _component_flags.push_back(flags);

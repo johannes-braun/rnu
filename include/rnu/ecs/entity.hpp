@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 
-namespace myrt {
+namespace rnu {
 using entity_info = std::vector<std::pair<id_t, uint32_t>>;
 using indexed_entity = std::pair<uint32_t, entity_info>;
 
@@ -49,4 +49,5 @@ struct entity_deleter {
 };
 using unique_entity = std::unique_ptr<entity, entity_deleter>;
 using shared_entity = std::shared_ptr<entity>;
+using weak_entity = std::weak_ptr<entity>;
 } // namespace myrt

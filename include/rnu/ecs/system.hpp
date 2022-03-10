@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <execution>
 
-namespace myrt {
+namespace rnu {
 enum class component_flag : uint32_t {
   optional = 1 << 0,
 };

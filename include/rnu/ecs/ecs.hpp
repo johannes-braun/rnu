@@ -8,7 +8,7 @@
 #include <cassert>
 #include <chrono>
 
-namespace myrt {
+namespace rnu {
 class ecs {
   friend class entity;
 

@@ -1,7 +1,7 @@
 #include <rnu/ecs/ecs.hpp>
 #include <algorithm>
 
-namespace myrt {
+namespace rnu {
 entity::operator entity_handle() const noexcept {
   return _handle;
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace myrt {
+namespace rnu {
 template <traits::component_type... Component> void entity::add(const Component&... component) {
   (_ecs->add_component_impl(_handle, Component::id, &component), ...);
 }

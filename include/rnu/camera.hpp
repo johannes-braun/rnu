@@ -4,9 +4,73 @@
 
 #  include <optional>
 #  include <concepts>
+#include <variant>
 #  include "math/math.hpp"
 
 namespace rnu {
+template <typename Float>
+struct perspective_projection
+{
+  using float_type = Float;
+  using mat_type = mat<float_type, 4, 4>;
+
+  float_type fovy_radians;
+  float_type aspect;
+  float_type near;
+  float_type far;
+
+  [[nodiscard]] constexpr mat_type matrix() const noexcept {
+    const float_type theta = fovy_radians * float_type(0.5);
+    const float_type range = far - near;
+    const float_type invtan = static_cast<float_type>(1.0 / tan(theta));
+
+    mat_type result;
+    result.at(0, 0) = invtan / aspect;
+    result.at(1, 1) = invtan;
+    result.at(2, 2) = -(near + far) / range;
+    result.at(2, 3) = -1;
+    result.at(3, 2) = -2 * near * far / range;
+    result.at(3, 3) = 0;
+
+    return result;
+  }
+};
+
+template <typename Float>
+struct ortho_projection
+{
+  using float_type = Float;
+  using mat_type = mat<float_type, 4, 4>;
+
+  float_type left;
+  float_type right;
+  float_type top;
+  float_type bottom;
+  float_type near;
+  float_type far;
+
+  [[nodiscard]] constexpr mat_type matrix() const noexcept {
+    const auto rml = right - left;
+    const auto fmn = far - near;
+    const auto tmb = top - bottom;
+
+    mat_type result;
+    result.at(0, 0) = 2 / rml;
+    result.at(1, 1) = 2 / tmb;
+    result.at(2, 2) = -2 / fmn;
+    result.at(3, 0) = -((right + left) / rml);
+    result.at(3, 1) = -((top + bottom) / tmb);
+    result.at(3, 2) = -((far + near) / fmn);
+    return result;
+  }
+};
+
+template<typename Float>
+using projection = std::variant<
+  perspective_projection<Float>,
+  ortho_projection<Float>
+>;
+
 template <typename Float> class camera {
 public:
   using float_type = Float;
@@ -59,40 +123,42 @@ public:
 
   [[nodiscard]] constexpr static mat_type projection(
       float_type fovy_radians, float_type aspect, float_type near, float_type far, bool row_major = false) noexcept {
-    const float_type theta = fovy_radians * float_type(0.5);
-    const float_type range = far - near;
-    const float_type invtan = static_cast<float_type>(1.0 / tan(theta));
-
-    mat_type result;
-    result.at(0, 0) = invtan / aspect;
-    result.at(1, 1) = invtan;
-    result.at(2, 2) = -(near + far) / range;
-    result.at(2, 3) = -1;
-    result.at(3, 2) = -2 * near * far / range;
-    result.at(3, 3) = 0;
+    perspective_projection<Float> const result{
+      fovy_radians,
+      aspect,
+      near, 
+      far
+    };
 
     if (row_major)
-      transpose_inplace(result);
-    return result;
+      return transpose(result.matrix());
+    return result.matrix();
   }
   [[nodiscard]] constexpr static mat_type orthographic(
-      float_type left, float_type right, float_type top, float_type bottom, float_type near, float_type far) {
-    const auto rml = right - left;
-    const auto fmn = far - near;
-    const auto tmb = top - bottom;
-
-    mat_type result;
-    result.at(0, 0) = 2 / rml;
-    result.at(1, 1) = 2 / tmb;
-    result.at(2, 2) = -2 / fmn;
-    result.at(3, 0) = -((right + left) / rml);
-    result.at(3, 1) = -((top + bottom) / tmb);
-    result.at(3, 2) = -((far + near) / fmn);
-    return result;
+    float_type left, float_type right, float_type top, float_type bottom, float_type near, float_type far) {
+    return ortho_projection<Float>{
+      left, right, top, bottom, near, far
+    }.matrix();
   }
 
   [[nodiscard]] constexpr vec_type position() const noexcept {
     return m_translation;
+  }
+
+  [[nodiscard]] constexpr quat_type rotation() const noexcept {
+    return m_rotation;
+  }
+
+  constexpr void set_rotation(quat_type rotation) const noexcept
+  {
+    m_last_x = std::nullopt;
+    m_last_y = std::nullopt;
+    m_rotation = rotation;
+  }
+
+  constexpr void set_position(vec_type position) const noexcept
+  {
+    m_translation = position;
   }
 
 private:

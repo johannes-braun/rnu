@@ -2,7 +2,7 @@
 
 #include <type_traits>
 
-namespace myrt {
+namespace rnu {
 template <typename TEnum> class flags {
 public:
   using base_type = std::underlying_type_t<TEnum>;
