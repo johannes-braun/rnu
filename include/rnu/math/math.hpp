@@ -3,6 +3,7 @@
 #include "mat.hpp"
 #include "vec.hpp"
 #include "quat.hpp"
+#include "rect.hpp"
 #include "traits.hpp"
 #include "cx_fun.hpp"
 
@@ -126,6 +127,11 @@ namespace rnu {
   using mat2ui64 = mat2_t<std::uint64_t>;
   using mat3ui64 = mat3_t<std::uint64_t>;
   using mat4ui64 = mat4_t<std::uint64_t>;
+
+  using rect2f = box<2, float>;
+  using rect2d = box<2, double>;
+  using box3f = box<3, float>;
+  using box3d = box<3, double>;
 
   template<typename T>
   constexpr mat4_t<T> translation(vec3_t<T> vector) noexcept {

@@ -49,10 +49,7 @@ protected:
   }
 
 private:
-  static auto types() -> std::vector<std::tuple<component_creator_fun, component_deleter_fun, size_t>>& {
-    static std::vector<std::tuple<component_creator_fun, component_deleter_fun, size_t>> t;
-    return t;
-  }
+  static auto types()->std::vector<std::tuple<component_creator_fun, component_deleter_fun, size_t>>&;
 };
 
 template <typename C>

@@ -13,13 +13,11 @@ template <traits::component_type Component, traits::component_type... Components
 template <traits::component_type Component> std::decay_t<Component>* entity::get() {
   using type = std::decay_t<Component>;
   auto* const c = static_cast<type*>(_ecs->get_component_impl(_handle, _ecs->_components[type::id], type::id));
-  assert(c);
   return c;
 }
 template <traits::component_type Component> const std::decay_t<Component>* entity::get() const {
   using type = const std::decay_t<Component>;
   auto* const c = static_cast<type*>(_ecs->get_component_impl(_handle, _ecs->_components[type::id], type::id));
-  assert(c);
   return c;
 }
 

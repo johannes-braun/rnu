@@ -356,5 +356,11 @@ namespace rnu::cx
   [[nodiscard]] constexpr auto degrees(T rad) noexcept {
     return to_float_t<T>(rad * to_float_t<T>(180) * std::numbers::inv_pi_v<double>);
   }
+
+  template<typename T, std::floating_point Alpha>
+  constexpr T mix(T a, T b, Alpha t)
+  {
+    return (1 - t) * a + t * b;
+  }
 }
 #endif RNU_MATH_CX_FUN_HPP

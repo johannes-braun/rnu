@@ -32,6 +32,14 @@ namespace rnu
       return std::decay_t<decltype(*begin(std::declval<T>()))>{};
   }
 
+  template<typename ContainerOfFutures> 
+  void await_all(ContainerOfFutures&& c)
+    requires requires(ContainerOfFutures&& c) { { begin(c)->wait() }; { end(c) }; }
+  {
+    for (auto const& awaitable : c)
+      awaitable.wait();
+  }
+
   class thread_pool {
   public:
     [[nodiscard]] thread_pool(unsigned concurrency = std::thread::hardware_concurrency());
@@ -162,52 +170,4 @@ namespace rnu
     return future;
   }
 
-
-  inline thread_pool::thread_pool(unsigned concurrency)
-  {
-    for (unsigned i = 0; i < concurrency; ++i)
-      m_threads.push_back(std::jthread(&thread_loop, this));
-  }
-
-  inline thread_pool::~thread_pool()
-  {
-    for (auto& thread : m_threads) thread.request_stop();
-    std::unique_lock<std::mutex> lock(m_jobs_mutex);
-    m_wait_condition.notify_all();
-  }
-
-  inline void thread_pool::run_detached(std::function<void()> job)
-  {
-    std::unique_lock<std::mutex> lock(m_jobs_mutex);
-    m_jobs.push_back(std::move(job));
-    m_wait_condition.notify_one();
-  }
-
-  inline unsigned thread_pool::concurrency() const
-  {
-    return static_cast<unsigned>(m_threads.size());
-  }
-
-  inline void thread_pool::thread_loop(std::stop_token stop_token, thread_pool* self)
-  {
-    while (!stop_token.stop_requested()) {
-
-      std::unique_lock<std::mutex> lock(self->m_jobs_mutex);
-
-      do {
-        self->m_wait_condition.wait(lock, [&] { return stop_token.stop_requested() || !self->m_jobs.empty(); });
-      } while (!stop_token.stop_requested() && self->m_jobs.empty());
-
-      if (!stop_token.stop_requested())
-      {
-        auto const fun = std::move(self->m_jobs.front());
-        self->m_jobs.pop_front();
-        lock.unlock();
-
-        fun();
-
-        lock.lock();
-      }
-    }
-  }
 }

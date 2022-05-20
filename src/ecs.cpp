@@ -185,7 +185,7 @@ void ecs::add_component_impl(entity_handle e, id_t component_id, const component
   for (auto& l : _listeners)
     for (const auto id : l->component_ids())
       if (id == component_id) {
-        l->on_remove_component({this, e}, id);
+        l->on_add_component({this, e}, id);
         break;
       }
 }

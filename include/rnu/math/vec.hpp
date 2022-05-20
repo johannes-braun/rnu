@@ -72,13 +72,13 @@ namespace rnu
   }
 
   template<typename Fun, typename... T>
-  decltype(auto) get_all(Fun&& fun, size_t index, T&&... ts)
+  constexpr decltype(auto) get_all(Fun&& fun, size_t index, T&&... ts)
   {
     return fun(detail::get(std::forward<T>(ts), index)...);
   }
 
   template<typename Fun, size_t... Indices, typename... T>
-  auto apply_impl(Fun&& fun, std::index_sequence<Indices...>, T&&... ts)
+  constexpr auto apply_impl(Fun&& fun, std::index_sequence<Indices...>, T&&... ts)
   {
     using rv = decltype(get_all(std::forward<Fun>(fun), 0, std::forward<T>(ts)...));
     constexpr auto count = max_size<T...>();
@@ -101,7 +101,7 @@ namespace rnu
 
   template<typename Fun, typename... T>
   requires equivalent_types<T...> && requires(Fun&& fun, T&&... ts) { get_all(std::forward<Fun>(fun), 0, std::forward<T>(ts)...); }
-  auto apply(Fun&& fun, T&&... ts) {
+  constexpr auto apply(Fun&& fun, T&&... ts) {
     return apply_impl(std::forward<Fun>(fun), std::make_index_sequence<max_size<T...>()>(), std::forward<T>(ts)...);
   }
 
@@ -269,27 +269,6 @@ namespace rnu
     }
   }    // namespace detail
 
-  template<vector V>
-  [[nodiscard]] constexpr auto dot(V a, V b) noexcept
-  {
-    return detail::dot_impl(std::make_index_sequence < V{}.size() > (), a.data(), b.data());
-  }
-  template<vector V>
-  [[nodiscard]] constexpr auto norm(V a) noexcept
-  {
-    return sqrt(dot(a, a));
-  }
-  template<vector V>
-  [[nodiscard]] constexpr auto normalize(V a) noexcept
-  {
-    return apply([inv_len = (1) / norm(a)](const auto& val) { return val * inv_len; }, a);
-  }
-  template<typename T>
-  [[nodiscard]] constexpr auto cross(const vec<T, 3>& a, const vec<T, 3>& b) noexcept
-  {
-    return vec<T, 3>(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
-  }
-
 #define assign_op(Ope) \
     template<typename Lhs, typename Rhs> \
     constexpr decltype(auto) operator Ope(Lhs& lhs, Rhs&& rhs) \
@@ -337,6 +316,26 @@ namespace rnu
   unary_prefix_op(~);
   unary_prefix_op(!);
 
+  template<vector V>
+  [[nodiscard]] constexpr auto dot(V a, V b) noexcept
+  {
+    return detail::dot_impl(std::make_index_sequence < V{}.size() > (), a.data(), b.data());
+  }
+  template<vector V>
+  [[nodiscard]] constexpr auto norm(V a) noexcept
+  {
+    return sqrt(dot(a, a));
+  }
+  template<vector V>
+  [[nodiscard]] constexpr V normalize(V a) noexcept
+  {
+    return a / norm(a);
+  }
+  template<typename T>
+  [[nodiscard]] constexpr auto cross(const vec<T, 3>& a, const vec<T, 3>& b) noexcept
+  {
+    return vec<T, 3>(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+  }
 
   template<typename T>
   constexpr decltype(auto) operator++(T&& value)
