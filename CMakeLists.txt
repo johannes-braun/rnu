@@ -10,6 +10,7 @@ target_sources(rnu PUBLIC
   src/ecs.cpp
   src/system.cpp
   src/component.cpp
+  src/obj.cpp
   src/rnu.natvis)
 add_library(rnu::rnu ALIAS rnu)
 

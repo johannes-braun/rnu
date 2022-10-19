@@ -66,6 +66,43 @@ private:
   std::vector<std::reference_wrapper<system_base>> _systems;
 };
 
+template<typename... Systems>
+class systems
+{
+public:
+  systems(Systems&&... systems)
+    : _systems{ std::move(systems)... }
+  {
+    populate(std::make_index_sequence<sizeof...(Systems)>());
+  }
+
+  template<typename System>
+  System& get() { return std::get<System>(_systems); }
+
+  template<typename System>
+  System const& get() const { return std::get<System>(_systems); }
+
+  template<std::size_t Index>
+  auto& get() { return std::get<Index>(_systems); }
+
+  template<std::size_t Index>
+  auto const& get() const { return std::get<Index>(_systems); }
+
+  auto& list() {
+    return _list;
+  }
+
+private:
+  template<std::size_t... Indices>
+  void populate(std::index_sequence<Indices...>)
+  {
+    (_list.add(get<Indices>()), ...);
+  }
+
+  std::tuple<Systems...> _systems;
+  rnu::system_list _list;
+};
+
 template <traits::component_type... Components> struct typed_system : public system {
 public:
   typed_system() {

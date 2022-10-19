@@ -19,6 +19,21 @@ namespace rnu
       return position;
     }
 
+    constexpr auto operator==(box const& other) const
+    {
+      return position == other.position && size == other.size;
+    }
+
+    constexpr auto operator!=(box const& other) const
+    {
+      return position != other.position || size != other.size;
+    }
+
+    constexpr bool contains(rnu::vec<TPosition, Dimensions> point) const
+    {
+      return (point >= lower()).all() && (point <= upper()).all();
+    }
+
     vec<position_type, dimensions> position;
     vec<size_type, dimensions> size;
   };
