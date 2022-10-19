@@ -12,7 +12,7 @@
 namespace rnu::cx
 {
   namespace detail {
-    constexpr double eps = 1e-8;
+    constexpr double eps = 1e-6;
   }
 
   /* Get two 32 bit ints from a double.  */

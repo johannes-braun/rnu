@@ -2,6 +2,7 @@
 #include <array>
 #include <concepts>
 #include <algorithm>
+#include <rnu/math/cx_fun.hpp>
 
 #include "traits.hpp"
 
@@ -324,7 +325,7 @@ namespace rnu
   template<vector V>
   [[nodiscard]] constexpr auto norm(V a) noexcept
   {
-    return sqrt(dot(a, a));
+    return rnu::cx::sqrt(dot(a, a));
   }
   template<vector V>
   [[nodiscard]] constexpr V normalize(V a) noexcept
