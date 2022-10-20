@@ -223,6 +223,9 @@ namespace rnu
         line_stream.ignore();
         for (std::string vertex; std::getline(line_stream, vertex, ' ');)
         {
+          if (std::ranges::all_of(vertex, [](char c) { return std::isspace(c); }))
+            continue;
+
           auto& v = face.vertices.emplace_back();
 
           int p = 0;
