@@ -9,7 +9,7 @@
 
 namespace rnu {
 #define implement_cx_fun1(name, param1)\
-  template<typename T> constexpr auto name(T&& param1) requires requires(direct_scalar_t<T> t) { cx::name(t); } { return apply_2d(cx::name<direct_scalar_t<T>>, param1); }
+  template<typename T> constexpr auto name(T&& param1) requires requires(direct_scalar_t<T> t) { cx::name(t); } { return apply_2d(&cx::name<direct_scalar_t<T>>, param1); }
 #define implement_cx_fun2(name, param1, param2)\
   template<typename T1, typename T2> constexpr auto name(T1&& param1, T2&& param2) requires requires(direct_scalar_t<T1> t1, direct_scalar_t<T2> t2) { cx::name(t1, t2); } { return apply_2d([](auto&&... args){ return cx::name(args...); }, param1, param2); }
 #define implement_cx_fun3(name, param1, param2, param3)\
@@ -135,7 +135,7 @@ namespace rnu {
 
   template<typename T>
   constexpr mat4_t<T> translation(vec3_t<T> vector) noexcept {
-    return mat4_t<T>{ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, vector.x, vector.y, vector.z, 1 };
+    return mat4_t<T>{ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, vector[0], vector[1], vector[2], 1 };
   }
   template<quaternion T>
   constexpr mat4_t<typename T::value_type> rotation(T quat) noexcept {
@@ -144,9 +144,9 @@ namespace rnu {
   template<typename T>
   constexpr mat4_t<T> scale(vec3_t<T> scales) noexcept {
     mat4_t<T> result;
-    result.at(0, 0) = scales.x;
-    result.at(1, 1) = scales.y;
-    result.at(2, 2) = scales.z;
+    result.at(0, 0) = scales[0];
+    result.at(1, 1) = scales[1];
+    result.at(2, 2) = scales[2];
     return result;
   }
 

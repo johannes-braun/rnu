@@ -250,7 +250,9 @@ namespace rnu
           else v[2] = n;
 
           if (v[2] > 10000000)
-            __debugbreak();
+          {
+            throw std::runtime_error("Detected invalid normals.");
+          }
         }
       }
     }
@@ -266,7 +268,7 @@ namespace rnu
     return result;
   }
 
-  using face_identifier = std::tuple<vec3_type, vec3_type, vec2_type>;
+  using face_identifier = std::tuple<obj_vec3, obj_vec3, obj_vec2>;
 
   struct face_hasher
   {
@@ -309,9 +311,9 @@ namespace rnu
         if (face.vertices.size() <= 2)
           continue;
 
-        vec3_type pos0 = object.positions[face.vertices[0][0]];
-        vec2_type tex0 = object.texcoords[face.vertices[0][1]];
-        vec3_type nor0 = object.normals[face.vertices[0][2]];
+        obj_vec3 pos0 = object.positions[face.vertices[0][0]];
+        obj_vec2 tex0 = object.texcoords[face.vertices[0][1]];
+        obj_vec3 nor0 = object.normals[face.vertices[0][2]];
 
         const auto [iter0, success0] = face_singulator.emplace(face_identifier{ pos0, nor0, tex0 }, unsigned(triangulated.positions.size()));
         if (success0)
@@ -321,9 +323,9 @@ namespace rnu
           triangulated.texcoords.push_back(tex0);
         }
 
-        vec3_type pos1 = object.positions[face.vertices[1][0]];
-        vec2_type tex1 = object.texcoords[face.vertices[1][1]];
-        vec3_type nor1 = object.normals[face.vertices[1][2]];
+        obj_vec3 pos1 = object.positions[face.vertices[1][0]];
+        obj_vec2 tex1 = object.texcoords[face.vertices[1][1]];
+        obj_vec3 nor1 = object.normals[face.vertices[1][2]];
 
         const auto [iter1, success1] = face_singulator.emplace(face_identifier{ pos1, nor1, tex1 }, unsigned(triangulated.positions.size()));
         if (success1)
@@ -339,9 +341,9 @@ namespace rnu
         for (size_t i = 2; i < face.vertices.size(); ++i)
         {
 
-          vec3_type pos = object.positions[face.vertices[i][0]];
-          vec2_type tex = object.texcoords[face.vertices[i][1]];
-          vec3_type nor = object.normals[face.vertices[i][2]];
+          obj_vec3 pos = object.positions[face.vertices[i][0]];
+          obj_vec2 tex = object.texcoords[face.vertices[i][1]];
+          obj_vec3 nor = object.normals[face.vertices[i][2]];
 
           const auto [iter, success] = face_singulator.emplace(face_identifier{ pos, nor, tex }, unsigned(triangulated.positions.size()));
           triangulated.indices.push_back(iter0->second);

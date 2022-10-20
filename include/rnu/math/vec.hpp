@@ -5,6 +5,7 @@
 #include <rnu/math/cx_fun.hpp>
 
 #include "traits.hpp"
+#include "cx_fun.hpp"
 
 namespace rnu
 {
@@ -335,7 +336,7 @@ namespace rnu
   template<typename T>
   [[nodiscard]] constexpr auto cross(const vec<T, 3>& a, const vec<T, 3>& b) noexcept
   {
-    return vec<T, 3>(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+    return vec<T, 3>(a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]);
   }
 
   template<typename T>

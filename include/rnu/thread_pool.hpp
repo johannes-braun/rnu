@@ -40,6 +40,12 @@ namespace rnu
       awaitable.wait();
   }
 
+  template<typename R>
+  bool is_ready(std::future<R> const& f)
+  {
+    return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
+  }
+
   class thread_pool {
   public:
     [[nodiscard]] thread_pool(unsigned concurrency = std::thread::hardware_concurrency());

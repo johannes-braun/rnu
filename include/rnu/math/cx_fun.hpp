@@ -9,12 +9,13 @@
 #include <type_traits>
 #include "traits.hpp"
 
+namespace rnu::detail
+{
+  constexpr double eps = 1e-6;
+}
+
 namespace rnu::cx
 {
-  namespace detail {
-    constexpr double eps = 1e-6;
-  }
-
   /* Get two 32 bit ints from a double.  */
   constexpr auto extract_words(int32_t& hi, int32_t& lo, double d) {
     const uint64_t cvt = std::bit_cast<uint64_t>(d);
@@ -113,10 +114,10 @@ namespace rnu::cx
     }
   }
 
-  template<std::floating_point T, typename R> 
+  template<std::floating_point T, typename R>
   constexpr T pow(T x, R y) {
     if (std::is_constant_evaluated()) {
-      if constexpr (std::integral<R>) 
+      if constexpr (std::integral<R>)
       {
         T result = x;
         for (R i = 0; i < y; ++i)

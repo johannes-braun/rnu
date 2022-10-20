@@ -11,6 +11,10 @@ target_sources(rnu PUBLIC
   src/system.cpp
   src/component.cpp
   src/obj.cpp
+  src/font.cpp
+  src/skyline_packer.cpp
+  src/vector_image.cpp
+  src/bvh.cpp
   src/rnu.natvis)
 add_library(rnu::rnu ALIAS rnu)
 

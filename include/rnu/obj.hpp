@@ -6,15 +6,17 @@
 #include <filesystem>
 #include <vector>
 #include <memory>
+#include <rnu/math/math.hpp>
 
 namespace rnu
 {
-  using vec3_type = std::array<float, 3>;
-  using vec2_type = std::array<float, 2>;
+  using obj_vec3 = vec3;
+  using obj_vec2 = vec2;
+  using obj_face = vec3ui32;
 
   struct face_t
   {
-    std::vector<std::array<unsigned, 3>> vertices;
+    std::vector<obj_face> vertices;
   };
 
 
@@ -22,10 +24,10 @@ namespace rnu
   {
     std::string name;
     float specularity;
-    vec3_type ambient;
-    vec3_type diffuse;
-    vec3_type specular;
-    vec3_type emissive;
+    obj_vec3 ambient;
+    obj_vec3 diffuse;
+    obj_vec3 specular;
+    obj_vec3 emissive;
     float ior;
     float dissolve;
     int illumination_model;
@@ -42,14 +44,13 @@ namespace rnu
 
   struct object_t
   {
-
     std::string name;
 
     std::vector<vertex_group_t> groups;
 
-    std::vector<vec3_type> positions;
-    std::vector<vec3_type> normals;
-    std::vector<vec2_type> texcoords;
+    std::vector<obj_vec3> positions;
+    std::vector<obj_vec3> normals;
+    std::vector<obj_vec2> texcoords;
   };
   std::vector<object_t> load_obj(std::filesystem::path const& obj_file);
 
@@ -57,9 +58,9 @@ namespace rnu
   {
     std::string name;
     std::vector<std::uint32_t> indices;
-    std::vector<vec3_type> positions;
-    std::vector<vec3_type> normals;
-    std::vector<vec2_type> texcoords;
+    std::vector<obj_vec3> positions;
+    std::vector<obj_vec3> normals;
+    std::vector<obj_vec2> texcoords;
     std::shared_ptr<material_t> material;
   };
   std::vector<triangulated_object_t> triangulate(object_t const& object);

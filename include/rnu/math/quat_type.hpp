@@ -25,7 +25,7 @@ namespace rnu {
 
   private:
     using array_type = std::array<value_type, 4>;
-    enum class angle_axis_init_t;
+    enum class angle_axis_init_t {};
   public:
     using iterator = typename array_type::iterator;
     using const_iterator = typename array_type::const_iterator;
@@ -90,19 +90,19 @@ namespace rnu {
   template<quaternion Q>
   [[nodiscard]] constexpr Q conj(const Q& q) noexcept
   {
-    return Q(q.w, -q.x, -q.y, -q.z);
+    return Q(q[0], -q[1], -q[2], -q[3]);
   }
   template<quaternion Q>
   [[nodiscard]] constexpr auto dot(const Q& q1, const Q& q2) noexcept
   {
-    auto const v1 = vec<typename Q::value_type, 4>(q1.w, q1.x, q1.y, q1.z);
-    auto const v2 = vec<typename Q::value_type, 4>(q2.w, q2.x, q2.y, q2.z);
+    auto const v1 = vec<typename Q::value_type, 4>(q1[0], q1[1], q1[2], q1[3]);
+    auto const v2 = vec<typename Q::value_type, 4>(q2[0], q2[1], q2[2], q2[3]);
     return dot(v1, v2);
   }
   template<quaternion Q>
   [[nodiscard]] constexpr auto norm(const Q& q) noexcept
   {
-    return norm(vec<typename Q::value_type, 4>(q.w, q.x, q.y, q.z));
+    return norm(vec<typename Q::value_type, 4>(q[0], q[1], q[2], q[3]));
   }
   template<quaternion Q>
   [[nodiscard]] constexpr auto snorm(const Q& q) noexcept
@@ -113,10 +113,10 @@ namespace rnu {
   [[nodiscard]] constexpr auto normalize(Q q) noexcept
   {
     const auto n = norm(q);
-    q.w /= n;
-    q.x /= n;
-    q.y /= n;
-    q.z /= n;
+    q[0] /= n;
+    q[1] /= n;
+    q[2] /= n;
+    q[3] /= n;
     return q;
   }
   template<quaternion Q>
