@@ -6,7 +6,7 @@ target_include_directories(rnu PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_features(rnu PUBLIC cxx_std_23)
 target_sources(rnu PUBLIC cpp.hint)
 target_sources(rnu PUBLIC 
-  
+  src/sdf_font.cpp
   src/ecs.cpp
   src/system.cpp
   src/component.cpp
