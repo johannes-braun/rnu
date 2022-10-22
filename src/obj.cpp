@@ -93,13 +93,17 @@ namespace rnu
       });
   }
 
-  std::vector<object_t> load_obj(std::filesystem::path const& obj_file)
+  std::expected<std::vector<object_t>, loading_error> load_obj(std::filesystem::path const& obj_file)
   {
     std::vector<object_t> result;
 
     size_t pos_index_offset = 1;
     size_t tex_index_offset = 1;
     size_t nor_index_offset = 1;
+
+    if (!exists(obj_file))
+      return std::unexpected(loading_error::file_not_found);
+
     std::ifstream in(obj_file, std::ios::binary | std::ios::ate);
 
     std::streamsize size = in.tellg();
@@ -254,7 +258,7 @@ namespace rnu
 
           if (v[2] > 10000000)
           {
-            throw std::runtime_error("Detected invalid normals.");
+            return std::unexpected(loading_error::invalid_normals_detected);
           }
         }
       }

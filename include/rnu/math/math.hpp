@@ -6,6 +6,7 @@
 #include "rect.hpp"
 #include "traits.hpp"
 #include "cx_fun.hpp"
+#include "packing.hpp"
 
 namespace rnu {
 #define implement_cx_fun1(name, param1)\

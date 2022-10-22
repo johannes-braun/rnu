@@ -7,6 +7,7 @@
 #include <vector>
 #include <memory>
 #include <rnu/math/math.hpp>
+#include <expected>
 
 namespace rnu
 {
@@ -52,7 +53,14 @@ namespace rnu
     std::vector<obj_vec3> normals;
     std::vector<obj_vec2> texcoords;
   };
-  std::vector<object_t> load_obj(std::filesystem::path const& obj_file);
+
+  enum class loading_error
+  {
+    file_not_found,
+    invalid_normals_detected
+  };
+
+  std::expected<std::vector<object_t>, loading_error> load_obj(std::filesystem::path const& obj_file);
 
   struct triangulated_object_t
   {

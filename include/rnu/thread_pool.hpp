@@ -5,6 +5,7 @@
 #include <vector>
 #include <functional>
 #include <mutex>
+#include <memory>
 #include <deque>
 #include <experimental/generator>
 
@@ -13,8 +14,8 @@ namespace rnu
   template<typename Func, typename... Args>
   concept callable = requires(Func func, Args... args) { func(args...); };
 
-  template<typename Func, typename Type>
-  concept async_loader = requires(Func func) { { func() }->std::convertible_to<Type>; };
+  template<typename Func, typename Data, typename Type>
+  concept async_loader = requires(Func func, Data d) { { func(d) }->std::convertible_to<Type>; };
 
   template<typename T>
   concept is_atomic = std::is_trivially_copyable_v<T> && std::is_copy_constructible_v<T> &&
@@ -34,7 +35,7 @@ namespace rnu
 
   template<typename ContainerOfFutures> 
   void await_all(ContainerOfFutures&& c)
-    requires requires(ContainerOfFutures&& c) { { begin(c)->wait() }; { end(c) }; }
+    requires requires(ContainerOfFutures c) { { begin(c)->wait() }; { end(c) }; }
   {
     for (auto const& awaitable : c)
       awaitable.wait();
@@ -46,23 +47,44 @@ namespace rnu
     return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
   }
 
-  class thread_pool {
+  template<typename Arg, typename Result>
+  struct ref_fun
+  {
+    using type = Result(Arg&);
+  };
+  
+  template<typename Result>
+  struct ref_fun<void, Result>
+  {
+    using type = Result();
+  };
+
+  template<typename Arg, typename Result>
+  using ref_fun_t = typename ref_fun<Arg, Result>::type;
+
+  template<typename ThreadData = void>
+  class basic_thread_pool {
   public:
-    [[nodiscard]] thread_pool(unsigned concurrency = std::thread::hardware_concurrency());
-    ~thread_pool();
+    template<typename Res>
+    using job_async_t = std::function<ref_fun_t<ThreadData, Res>>;
+    using job_fun_t = job_async_t<void>;
 
-    template<callable Func>
-    [[nodiscard]] auto run_async(Func&& func);
+    [[nodiscard]] basic_thread_pool(unsigned concurrency = std::thread::hardware_concurrency()) requires(std::is_void_v<ThreadData>);
+    [[nodiscard]] basic_thread_pool(std::function<ThreadData(unsigned id)> create_data = [] { return ThreadData{}; }, unsigned concurrency = std::thread::hardware_concurrency()) requires(!std::is_void_v<ThreadData>);
+    ~basic_thread_pool();
 
-    void run_detached(std::function<void()> job);
+    template<typename Res = void>
+    [[nodiscard]] auto run_async(job_async_t<Res> func);
+
+    void run_detached(job_fun_t job);
 
     [[nodiscard]] unsigned concurrency() const;
 
   private:
-    static void thread_loop(std::stop_token stop_token, thread_pool* self);
+    void thread_loop(std::stop_token stop_token, ThreadData* data);
 
     std::vector<std::jthread> m_threads;
-    std::deque<std::function<void()>> m_jobs;
+    std::deque<job_fun_t> m_jobs;
     std::mutex m_jobs_mutex;
     std::condition_variable m_wait_condition;
   };
@@ -80,8 +102,8 @@ namespace rnu
     [[nodiscard]] async_resource() = default;
     [[nodiscard]] async_resource(T&& value) requires std::movable<T> : m_value(std::move(value)) {}
     [[nodiscard]] async_resource(T const& value) requires std::copyable<T> : m_value(value) {}
-    template<async_loader<T> Func>
-    [[nodiscard]] async_resource(thread_pool& pool, Func&& loader) {
+    template<typename Pt, async_loader<Pt, T> Func>
+    [[nodiscard]] async_resource(basic_thread_pool<Pt>& pool, Func&& loader) {
       load_resource(pool, std::forward<Func>(loader));
     }
 
@@ -109,12 +131,12 @@ namespace rnu
       return std::move(m_value);
     }
 
-    template<async_loader<T> Func>
-    bool load_resource(thread_pool& pool, Func&& loader)
+    template<typename Pt, async_loader<Pt, T> Func>
+    bool load_resource(basic_thread_pool<Pt>& pool, Func&& loader)
     {
       if (!is_ready()) return false;
-      m_current_process = pool.run_async([ld = std::forward<Func>(loader), this]{
-        auto value = ld();
+      m_current_process = pool.run_async([ld = std::forward<Func>(loader), this](auto&&... args){
+        auto value = ld(std::forward<decltype(args)>(args)...);
         auto const lock = make_lock();
         if constexpr (std::movable<T>)
           m_value = std::move(value);
@@ -147,24 +169,25 @@ namespace rnu
     std::future<void> m_current_process;
   };
 
-  template<callable Func>
-  auto thread_pool::run_async(Func&& func)
+  template<typename ThreadData>
+  template<typename Res>
+  auto basic_thread_pool<ThreadData>::run_async(job_async_t<Res> func)
   {
-    using result_type = decltype(func());
+    using result_type = Res;
     auto promise = std::make_shared<std::promise<result_type>>();
     std::future<result_type> future = promise->get_future();
 
     std::unique_lock<std::mutex> lock(m_jobs_mutex);
-    m_jobs.push_back([p = std::move(promise), f = std::forward<Func&&>(func)]() mutable{
+    m_jobs.push_back([p = std::move(promise), f = std::move(func)](auto&&... args) mutable{
       try {
         if constexpr (std::same_as<result_type, void>)
         {
-          f();
+          f(std::forward<decltype(args)>(args)...);
           p->set_value();
         }
         else
         {
-          p->set_value(f());
+          p->set_value(f(std::forward<decltype(args)>(args)...));
         }
       }
       catch (...)
@@ -176,4 +199,82 @@ namespace rnu
     return future;
   }
 
+  template<typename ThreadData>
+  [[nodiscard]] basic_thread_pool<ThreadData>::basic_thread_pool(std::function<ThreadData(unsigned id)> create_data, unsigned concurrency) requires(!std::is_void_v<ThreadData>)
+  {
+    for (unsigned i = 0; i < concurrency; ++i)
+    {
+      auto promise = std::make_shared<std::promise<void>>();
+      auto creation_future = promise->get_future(); 
+      m_threads.push_back(std::jthread([this, p = std::move(promise), i, &create_data](std::stop_token stop_token){
+          auto data = create_data(i);
+          p->set_value();
+          thread_loop(stop_token, &data);
+        }));
+
+      // ! Important ! 
+      // Ensures that "create_data" is still a valid reference in the thread function.
+      // Also ensures that there may not be any race conditions between the creation calls.
+      creation_future.wait();
+    }
+  }
+
+  template<typename ThreadData>
+  basic_thread_pool<ThreadData>::basic_thread_pool(unsigned concurrency) requires(std::is_void_v<ThreadData>)
+  {
+    for (unsigned i = 0; i < concurrency; ++i)
+      m_threads.push_back(std::jthread([this] (std::stop_token stop_token) {
+          thread_loop(stop_token, nullptr);
+        }));
+  }
+
+  template<typename ThreadData>
+  basic_thread_pool<ThreadData>::~basic_thread_pool()
+  {
+    for (auto& thread : m_threads) thread.request_stop();
+
+    std::unique_lock<std::mutex> lock(m_jobs_mutex);
+    m_wait_condition.notify_all();
+  }
+
+  template<typename ThreadData>
+  void basic_thread_pool<ThreadData>::run_detached(job_fun_t job)
+  {
+    std::unique_lock<std::mutex> lock(m_jobs_mutex);
+    m_jobs.push_back(std::move(job));
+    m_wait_condition.notify_one();
+  }
+
+  template<typename ThreadData>
+  unsigned basic_thread_pool<ThreadData>::concurrency() const
+  {
+    return static_cast<unsigned>(m_threads.size());
+  }
+
+  template<typename ThreadData>
+  void basic_thread_pool<ThreadData>::thread_loop(std::stop_token stop_token, ThreadData* data)
+  {
+    while (!stop_token.stop_requested()) {
+
+      std::unique_lock<std::mutex> lock(m_jobs_mutex);
+
+      m_wait_condition.wait(lock, [&] { return stop_token.stop_requested() || !m_jobs.empty(); });
+
+      if (!stop_token.stop_requested())
+      {
+        auto const fun = std::move(m_jobs.front());
+        m_jobs.pop_front();
+        lock.unlock();
+
+        if constexpr (std::is_void_v<ThreadData>)
+          fun();
+        else
+          fun(*data);
+
+        lock.lock();
+      }
+    }
+  }
+
+  using thread_pool = basic_thread_pool<void>;
 }
