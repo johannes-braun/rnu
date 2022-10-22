@@ -68,6 +68,7 @@ namespace rnu
     h = _height + 1;
     image.resize(w * h);
 
+    // Todo: remove with basic_thread_pool<GlyphCache> to remove thread_locals and to have more control...
     std::for_each(std::execution::par_unseq, begin(_infos), end(_infos), [this, w, h, &image](std::pair<rnu::glyph_id, glyph_info> const& pair) {
 
       auto const& [ch, info] = pair;
