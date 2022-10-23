@@ -8,59 +8,69 @@
 
 namespace rnu
 {
-  template<typename T>
-  using int_t = std::conditional_t<sizeof(T) == sizeof(uint8_t), uint8_t,
-    std::conditional_t<sizeof(T) == sizeof(uint16_t), uint16_t,
-    std::conditional_t<sizeof(T) == sizeof(uint32_t), uint32_t,
+  template<size_t RequiredSize>
+  using sized_int_t = std::conditional_t<RequiredSize <= sizeof(uint8_t), uint8_t,
+    std::conditional_t<RequiredSize <= sizeof(uint16_t), uint16_t,
+    std::conditional_t<RequiredSize <= sizeof(uint32_t), uint32_t,
     uint64_t>>>;
 
   template<bool Signed, std::size_t Exponent, std::size_t Mantissa, std::floating_point T>
-  constexpr int_t<T> small_float32(T x)
+  [[nodiscard]] constexpr auto small_float(T x) noexcept
   {
+    using result_type = sized_int_t<Exponent + Mantissa + size_t(Signed)>;
+    using source_int_type = sized_int_t<sizeof(T)>;
+
     static_assert(std::numeric_limits<T>::is_iec559);
+    constexpr auto one = source_int_type(1);
 
     constexpr auto input_size = sizeof(T) * std::numeric_limits<std::underlying_type_t<std::byte>>::digits;
     constexpr auto input_mantissa = std::numeric_limits<T>::digits;
 
-    constexpr auto input_exponent = input_size - input_mantissa - 1;
-    constexpr auto input_exponent_mask = ((1u << (input_exponent + 1)) - 1) << (input_mantissa - 1);
+    constexpr auto input_exponent = input_size - input_mantissa - one;
+    constexpr auto input_exponent_mask = ((one << (input_exponent + one)) - one) << (input_mantissa - one);
     constexpr auto exponent_difference = input_exponent - Exponent + 1;
 
-    constexpr auto base_shift = input_mantissa - Mantissa - 1;
-    constexpr auto exponent_mask = ((1u << Exponent) - 1u) << Mantissa;
-    constexpr auto mantissa_mask = ((1u << Mantissa) - 1u);
-    constexpr auto sign_shift = input_size - 1 - (Exponent + Mantissa);
+    constexpr auto base_shift = input_mantissa - Mantissa - one;
+    constexpr auto exponent_mask = ((one << Exponent) - one) << Mantissa;
+    constexpr auto mantissa_mask = ((one << Mantissa) - one);
+    constexpr auto sign_shift = input_size - one - (Exponent + Mantissa);
 
-    constexpr auto exponent_difference_mask = ((1u << exponent_difference) - 1u) << (input_size - 2u - exponent_difference);
+    constexpr auto exponent_difference_mask = ((one << exponent_difference) - one) << (input_size - one - one - exponent_difference);
 
-    auto const f = std::bit_cast<int_t<T>>(x);
+    auto const f = std::bit_cast<source_int_type>(x);
     auto const packed = ((((f & input_exponent_mask) - exponent_difference_mask) >> base_shift) & exponent_mask) |
       ((f >> base_shift) & mantissa_mask);
 
     if constexpr (Signed)
-      return packed | ((f & (1u << (input_size - 1))) >> sign_shift);
+      return result_type(packed | ((f & (one << (input_size - one))) >> sign_shift));
     else
-      return packed;
+      return result_type(packed);
   }
 
-  constexpr std::uint32_t to_float10(float f)
+  template<std::floating_point T>
+  [[nodiscard]] constexpr auto to_float10(T f) noexcept
   {
-    return small_float32<false, 5, 5>(f);
-  }
-  constexpr std::uint32_t to_float11(float f)
-  {
-    return small_float32<false, 5, 6>(f);
-  }
-  constexpr std::uint32_t to_half(float f)
-  {
-    return small_float32<true, 5, 10>(f);
+    return small_float<false, 5, 5>(f);
   }
 
-  constexpr std::uint32_t to_r11g11b10(float r, float g, float b)
+  template<std::floating_point T>
+  [[nodiscard]] constexpr auto to_float11(T f) noexcept
   {
-    return
+    return small_float<false, 5, 6>(f);
+  }
+
+  template<std::floating_point T>
+  [[nodiscard]] constexpr auto to_half(T f) noexcept
+  {
+    return small_float<true, 5, 10>(f);
+  }
+
+  template<std::floating_point R, std::floating_point G, std::floating_point B>
+  [[nodiscard]] constexpr std::uint32_t to_r11g11b10(R r, G g, B b) noexcept
+  {
+    return static_cast<std::uint32_t>(
       ((to_float11(r) & ((1 << 11) - 1)) << 0) |
       ((to_float11(g) & ((1 << 11) - 1)) << 11) |
-      ((to_float10(b) & ((1 << 10) - 1)) << 22);
+      ((to_float10(b) & ((1 << 10) - 1)) << 22));
   }
 }
