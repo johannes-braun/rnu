@@ -233,8 +233,8 @@ namespace rnu
   {
     for (auto& thread : m_threads) thread.request_stop();
 
-    std::unique_lock<std::mutex> lock(m_jobs_mutex);
     m_wait_condition.notify_all();
+    for (auto& thread : m_threads) thread.join();
   }
 
   template<typename ThreadData>
@@ -257,7 +257,6 @@ namespace rnu
     while (!stop_token.stop_requested()) {
 
       std::unique_lock<std::mutex> lock(m_jobs_mutex);
-
       m_wait_condition.wait(lock, [&] { return stop_token.stop_requested() || !m_jobs.empty(); });
 
       if (!stop_token.stop_requested())
