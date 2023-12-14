@@ -149,14 +149,14 @@ public:
     return m_rotation;
   }
 
-  constexpr void set_rotation(quat_type rotation) const noexcept
+  constexpr void set_rotation(quat_type rotation) noexcept
   {
     m_last_x = std::nullopt;
     m_last_y = std::nullopt;
     m_rotation = rotation;
   }
 
-  constexpr void set_position(vec_type position) const noexcept
+  constexpr void set_position(vec_type position) noexcept
   {
     m_translation = position;
   }
