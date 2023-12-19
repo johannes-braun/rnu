@@ -1,11 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
-  <Type Name="rnu::vec_base&lt;*&gt;">
+  <Type Name="rnu::vec_base&lt;*,1&gt;">
+    <DisplayString IncludeView="noparens">{x}</DisplayString>
+    <DisplayString ExcludeView="noparens">{{{x}}}</DisplayString>
+    <Expand>
+      <Item Name="x">x</Item>
+    </Expand>
+  </Type>
+  <Type Name="rnu::vec_base&lt;*,2&gt;">
     <DisplayString IncludeView="noparens">{x}, {y}</DisplayString>
     <DisplayString ExcludeView="noparens">{{{x}, {y}}}</DisplayString>
     <Expand>
       <Item Name="x">x</Item>
       <Item Name="y">y</Item>
+    </Expand>
+  </Type>
+  <Type Name="rnu::vec_base&lt;*,3&gt;">
+    <DisplayString IncludeView="noparens">{x}, {y}, {z}</DisplayString>
+    <DisplayString ExcludeView="noparens">{{{x}, {y}, {z}}}</DisplayString>
+    <Expand>
+      <Item Name="x">x</Item>
+      <Item Name="y">y</Item>
+      <Item Name="z">z</Item>
+    </Expand>
+  </Type>
+  <Type Name="rnu::vec_base&lt;*,4&gt;">
+    <DisplayString IncludeView="noparens">{x}, {y}, {z}, {w}</DisplayString>
+    <DisplayString ExcludeView="noparens">{{{x}, {y}, {z}, {w}}}</DisplayString>
+    <Expand>
+      <Item Name="x">x</Item>
+      <Item Name="y">y</Item>
+      <Item Name="z">z</Item>
+      <Item Name="w">w</Item>
     </Expand>
   </Type>
 </AutoVisualizer>

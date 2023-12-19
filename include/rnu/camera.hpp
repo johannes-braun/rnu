@@ -51,16 +51,16 @@ struct ortho_projection
 
   [[nodiscard]] constexpr mat_type matrix() const noexcept {
     const auto rml = right - left;
-    const auto fmn = far - near;
+    const auto nmf = near - far;
     const auto tmb = top - bottom;
 
     mat_type result;
     result.at(0, 0) = 2 / rml;
     result.at(1, 1) = 2 / tmb;
-    result.at(2, 2) = -2 / fmn;
+    result.at(2, 2) = 1 / nmf;
     result.at(3, 0) = -((right + left) / rml);
     result.at(3, 1) = -((top + bottom) / tmb);
-    result.at(3, 2) = -((far + near) / fmn);
+    result.at(3, 2) = near / nmf;
     return result;
   }
 };
@@ -122,7 +122,7 @@ public:
   }
 
   [[nodiscard]] constexpr static mat_type projection(
-      float_type fovy_radians, float_type aspect, float_type near, float_type far, bool row_major = false) noexcept {
+      float_type fovy_radians, float_type aspect, float_type near, float_type far, bool row_major = false, bool y_invert = false) noexcept {
     perspective_projection<Float> const result{
       fovy_radians,
       aspect,
@@ -130,9 +130,15 @@ public:
       far
     };
 
+    mat_type mat;
     if (row_major)
-      return transpose(result.matrix());
-    return result.matrix();
+      mat = transpose(result.matrix());
+    else
+      mat = result.matrix();
+
+    if(y_invert)
+      mat[1][1] *= -1;
+    return mat;
   }
   [[nodiscard]] constexpr static mat_type orthographic(
     float_type left, float_type right, float_type top, float_type bottom, float_type near, float_type far) {
