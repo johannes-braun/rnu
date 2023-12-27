@@ -155,6 +155,11 @@ public:
     return m_rotation;
   }
 
+  constexpr void replace_rotation(quat_type rotation) noexcept
+  {
+    m_rotation = rotation;
+  }
+
   constexpr void set_rotation(quat_type rotation) noexcept
   {
     m_last_x = std::nullopt;
