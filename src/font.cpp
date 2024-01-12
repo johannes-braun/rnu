@@ -1635,7 +1635,8 @@ namespace rnu
     }
   }
 
-  void font::outline_impl(glyph_id glyph, rnu::rect2f& bounds, void(*emit_segment)(void*, outline_segment), void* user_ptr) const
+  void font::outline_impl(glyph_id glyph, rnu::rect2f& bounds, void (*new_shape)(void* ptr),
+    void (*emit_segment)(void*, outline_segment), void* user_ptr) const
   {
     contour_buffer prealloc_contour_buffer;
     end_point_buffer end_points;
@@ -1645,6 +1646,9 @@ namespace rnu
       int start_point = 0;
       for (auto const end_point : end_points)
       {
+        if (new_shape)
+          new_shape(user_ptr);
+
         auto points = prealloc_contour_buffer.view().subspan(start_point, end_point + 1ull - start_point);
         auto const previous = [&](size_t index) {
           return (index + points.size() - 1) % points.size();

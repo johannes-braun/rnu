@@ -1,26 +1,27 @@
 #pragma once
 
-#include <rnu/font/font_table.hpp>
-#include <rnu/font/font_scripts.hpp>
-#include <rnu/font/font_languages.hpp>
-#include <rnu/font/font_features.hpp>
-
-#include <rnu/math/math.hpp>
-
-#include <filesystem>
-#include <span>
 #include <any>
+#include <filesystem>
 #include <fstream>
+#include <rnu/font/font_features.hpp>
+#include <rnu/font/font_languages.hpp>
+#include <rnu/font/font_scripts.hpp>
+#include <rnu/font/font_table.hpp>
+#include <rnu/math/math.hpp>
+#include <span>
 #include <variant>
 #include <vector>
 
 namespace rnu
 {
-  enum class glyph_id : std::uint32_t {
+  enum class glyph_id : std::uint32_t
+  {
     missing = 0
   };
 
-  enum class glyph_class : std::uint16_t {};
+  enum class glyph_class : std::uint16_t
+  {
+  };
 
   enum class basic_glyph_class
   {
@@ -113,8 +114,10 @@ namespace rnu
 
     // GPOS/GSUB
     std::optional<std::uint16_t> script_offset(font_script script, std::optional<gspec_off> const& offset) const;
-    std::optional<std::uint16_t> lang_offset(font_language lang, std::uint16_t script, std::optional<gspec_off> const& offset) const;
-    std::optional<std::uint16_t> feature_offset(font_feature feat, std::uint16_t lang, std::optional<gspec_off> const& offset) const;
+    std::optional<std::uint16_t> lang_offset(
+      font_language lang, std::uint16_t script, std::optional<gspec_off> const& offset) const;
+    std::optional<std::uint16_t> feature_offset(
+      font_feature feat, std::uint16_t lang, std::optional<gspec_off> const& offset) const;
     std::optional<gpos_feature> gpos_feature_lookup(std::uint16_t feat, std::span<glyph_id const> glyphs) const;
     std::optional<gsub_feature> gsub_feature_lookup(std::uint16_t feat, std::span<glyph_id const> glyphs) const;
 
@@ -138,15 +141,16 @@ namespace rnu
       long_int32 = 1
     };
 
-    struct glyph_index_data_f0 {
+    struct glyph_index_data_f0
+    {
       size_t offset;
     };
     struct glyph_index_data_f2
     {
       size_t offset;
     };
-    struct glyph_index_data_f4 
-    { 
+    struct glyph_index_data_f4
+    {
       size_t offset;
       std::uint16_t seg_count_x2;
       std::uint16_t search_range;
@@ -157,11 +161,8 @@ namespace rnu
     {
       size_t offset;
     };
-    using glyph_index_data = std::variant<
-      glyph_index_data_f0, 
-      glyph_index_data_f2,
-      glyph_index_data_f4,
-      glyph_index_data_f6>;
+    using glyph_index_data =
+      std::variant<glyph_index_data_f0, glyph_index_data_f2, glyph_index_data_f4, glyph_index_data_f6>;
 
     struct offset_subtable
     {
@@ -223,8 +224,8 @@ namespace rnu
     } _maxp;
 
     glyph_index_data _glyph_indexer;
-    std::optional<gspec_off>  _gpos_off;
-    std::optional<gspec_off>  _gsub_off;
+    std::optional<gspec_off> _gpos_off;
+    std::optional<gspec_off> _gsub_off;
     std::size_t _file_size;
     std::size_t _hmtx_offset;
     data_variant _file_data;
@@ -250,7 +251,7 @@ namespace rnu
     positioning,
     substitution
   };
-    
+
   class font_feature_info
   {
   public:
@@ -286,13 +287,21 @@ namespace rnu
 
     glyph_id glyph(char32_t character) const;
     std::size_t num_glyphs() const;
-    
-    template<typename Func>
-    void outline(glyph_id glyph, rnu::rect2f& bounds, Func&& func) const
+
+    template<typename Func, typename NewShape = decltype([]() {})>
+    void outline(glyph_id glyph, rnu::rect2f& bounds, Func&& func, NewShape&& new_shape = {}) const
     {
-      outline_impl(glyph, bounds, [](void* u, outline_segment s) {
-        std::invoke(*static_cast<std::decay_t<Func>*>(u), s); 
-      }, &func);
+      auto funcs = std::tuple(std::move(func), std::move(new_shape));
+      void (*new_shapef)(void* ptr) = [](void* u)
+      {
+        std::get<1> (*static_cast<std::decay_t<decltype(funcs)>*>(u))();
+      };
+      void (*emit_segmentf)(void*, outline_segment) = [](void* u, outline_segment s)
+      {
+        std::invoke(std::get<0>(*static_cast<std::decay_t<decltype(funcs)>*>(u)), s);
+      };
+
+      outline_impl(glyph, bounds, new_shapef, emit_segmentf, &funcs);
     }
 
     float units_per_em() const;
@@ -302,12 +311,16 @@ namespace rnu
 
     rnu::rect2f get_rect(glyph_id glyph) const;
 
-    std::optional<font_feature_info> query_feature(font_feature_type type, font_script script, font_language language, font_feature feature) const;
-    std::optional<font_feature_info> query_feature(font_feature_type type, font_language language, font_feature feature) const;
+    std::optional<font_feature_info> query_feature(
+      font_feature_type type, font_script script, font_language language, font_feature feature) const;
+    std::optional<font_feature_info> query_feature(
+      font_feature_type type, font_language language, font_feature feature) const;
     std::optional<font_feature_info> query_feature(font_feature_type type, font_feature feature) const;
 
-    std::optional<positioning_feature> lookup_positioning(font_feature_info const& info, std::span<glyph_id const> glyphs) const;
-    std::optional<substitution_feature> lookup_substitution(font_feature_info const& info, std::span<glyph_id const> glyphs) const;
+    std::optional<positioning_feature> lookup_positioning(
+      font_feature_info const& info, std::span<glyph_id const> glyphs) const;
+    std::optional<substitution_feature> lookup_substitution(
+      font_feature_info const& info, std::span<glyph_id const> glyphs) const;
 
     size_t substitution_count(substitution_feature const& feature) const;
     glyph_id substitution_glyph(substitution_feature const& feature, std::size_t index) const;
@@ -323,9 +336,11 @@ namespace rnu
     using contour_buffer = stack_buffer<contour_point, max_expected_num_points>;
     using end_point_buffer = stack_buffer<std::uint16_t, max_expected_num_contours>;
 
-    void outline_impl(glyph_id glyph, rnu::rect2f& bounds, void(*emit_segment)(void*, outline_segment), void* user_ptr) const;
-    void outline_impl(glyph_id glyph, contour_buffer& contours, end_point_buffer& end_points, rnu::rect2f* bounds) const;
-    
+    void outline_impl(glyph_id glyph, rnu::rect2f& bounds, void (*new_shape)(void* ptr),
+      void (*emit_segment)(void*, outline_segment), void* user_ptr) const;
+    void outline_impl(
+      glyph_id glyph, contour_buffer& contours, end_point_buffer& end_points, rnu::rect2f* bounds) const;
+
     font_accessor _accessor;
   };
-}
+}    // namespace rnu

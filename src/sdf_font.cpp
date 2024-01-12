@@ -5,12 +5,12 @@
 
 namespace rnu
 {
-  sdf_font::sdf_font(int atlas_width, float base_size, float sdf_width, rnu::font font, std::span<std::pair<char16_t, char16_t> const> unicode_ranges)
+  sdf_font::sdf_font(int atlas_width, float base_size, float sdf_width, rnu::font font, unicode_ranges unicode_ranges)
   {
     load(atlas_width, base_size, sdf_width, std::move(font), std::move(unicode_ranges));
   }
 
-  void sdf_font::load(int atlas_width, float base_size, float sdf_width, rnu::font font, std::span<std::pair<char16_t, char16_t> const> unicode_ranges)
+  void sdf_font::load(int atlas_width, float base_size, float sdf_width, rnu::font font, unicode_ranges unicode_ranges)
   {
     _font = std::move(font);
     _base_size = base_size;
@@ -47,7 +47,7 @@ namespace rnu
         };
 
         bounds.push_back(std::move(r));
-        infos.push_back(glyph_info{ x, gly, scale, defb, r, err });
+        infos.push_back(glyph_info{ x, gly, scale, defb, r/*, err*/ });
       }
     }
 
@@ -62,6 +62,13 @@ namespace rnu
     }
   }
 
+  rnu::rect2f sdf_font::glyph_uv(glyph_id glyph) const 
+  {
+    auto const& info = _infos.at(glyph);
+    auto const& [character, id, scale, db, pb/*, err*/] = info;
+    return pb;
+  }
+
   void sdf_font::dump(std::vector<std::uint8_t>& image, int& w, int& h) const
   {
     w = _width;
@@ -72,7 +79,7 @@ namespace rnu
     std::for_each(std::execution::par_unseq, begin(_infos), end(_infos), [this, w, h, &image](std::pair<rnu::glyph_id, glyph_info> const& pair) {
 
       auto const& [ch, info] = pair;
-      auto const& [character, id, scale, db, pb, err] = info;
+      auto const& [character, id, scale, db, pb/*, err*/] = info;
       auto const& outline = load_glyph(pair.second.id);
 
       auto const at = [&](int x, int y) -> std::uint8_t& { return image[x + y * w]; };
@@ -81,8 +88,7 @@ namespace rnu
       auto const min_y = pb.position.y;
       auto const max_x = pb.position.x + pb.size.x;
       auto const max_y = pb.position.y + pb.size.y;
-
-      auto const voff = -pb.position + db.position + err.position - rnu::vec2(_sdf_width, _sdf_width);
+      auto const voff = -pb.position + db.position/* + err.position*/ - rnu::vec2(_sdf_width, _sdf_width);
 
       for (int i = min_x; i <= max_x; ++i)
       {
@@ -137,7 +143,8 @@ namespace rnu
 
     return letter;
   }
-  std::optional<rnu::glyph_id> sdf_font::ligature(rnu::font const& font, rnu::font_feature_info const& lig_feature, std::span<rnu::glyph_id const> glyphs)
+  std::optional<rnu::glyph_id> sdf_font::ligature(
+    rnu::font const& font, rnu::font_feature_info const& lig_feature, std::span<rnu::glyph_id const> glyphs) const
   {
     auto const feat_result = font.lookup_substitution(lig_feature, glyphs);
     if (!feat_result)
@@ -149,9 +156,11 @@ namespace rnu
 
     return font.substitution_glyph(*feat_result, 0);
   }
-  std::vector<sdf_font::set_glyph_t> sdf_font::text_set(std::wstring_view str, int *num_lines, float* x_max)
+  std::vector<sdf_font::set_glyph_t> sdf_font::text_set(
+    std::wstring_view str, int* num_lines, float* x_max, float* y_max) const
   {
     rnu::vec2 cursor{ 0, 0 };
+
     auto ligature_feature = _font->query_feature(rnu::font_feature_type::substitution, rnu::font_script::scr_latin, rnu::font_language::lang_default, rnu::font_feature::ft_liga);
     auto kerning_feature = _font->query_feature(rnu::font_feature_type::positioning, rnu::font_script::scr_latin, rnu::font_language::lang_default, rnu::font_feature::ft_kern);
 
@@ -196,14 +205,14 @@ namespace rnu
 
     std::vector<set_glyph_t> set_glyphs(std::accumulate(begin(glyph_lines), end(glyph_lines), 0ull, [](auto const& val, auto& v) { return val + v.size(); }));
 
-    auto const basey = 40;
-    auto const rad = 0.5f;
-
     if (x_max)
       *x_max = 0;
+    if (y_max)
+      *y_max = 0;
 
     int base_i = 0;
     float base_x = cursor.x;
+    cursor.y = -(_font->ascent()) * font_scale;
     for (auto const& glyphs : glyph_lines)
     {
       for (int i = 0; i < glyphs.size(); ++i)
@@ -228,17 +237,18 @@ namespace rnu
           be1 += kerning_values->first.x_placement;
         }
 
-        auto const& info = _infos[gly];
+        auto const& info = _infos.at(gly);
 
         result.bounds.size = rec.size * font_scale;
-        result.bounds.position = cursor + rnu::vec2((be1 + rec.position.x) * font_scale, rec.position.y * font_scale);
+        result.bounds.position = cursor + rnu::vec2((be1 + rec.position.x) * font_scale, 
+          rec.position.y * font_scale);
         result.bounds.position -= _sdf_width;
         result.bounds.size += 2 * _sdf_width;
 
         auto const scale_by = 1.0 / rnu::vec2(_width, _height);
         result.uvs = info.packed_bounds;
-        result.uvs.position -= info.error.position;
-        result.uvs.size -= info.error.size;
+        //result.uvs.position -= info.error.position;
+        //result.uvs.size -= info.error.size;
         result.uvs.position *= scale_by;
         result.uvs.size *= scale_by;
 
@@ -247,6 +257,10 @@ namespace rnu
 
       if (x_max)
         *x_max = std::max(*x_max, cursor.x);
+
+      if (y_max)
+        *y_max = std::max(*y_max, -cursor.y - _font->descent() * font_scale);
+      
       base_i += glyphs.size();
       cursor.x = base_x;
       cursor.y -= (_font->ascent() - _font->descent()) * font_scale;
@@ -254,6 +268,11 @@ namespace rnu
     }
 
     return set_glyphs;
+  }
+
+  rnu::vec2i sdf_font::atlas_size() const
+  {
+    return {_width, _height + 1};
   }
   float sdf_font::base_size() const {
     return _base_size;
