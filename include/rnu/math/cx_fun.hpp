@@ -364,4 +364,4 @@ namespace rnu::cx
     return (1 - t) * a + t * b;
   }
 }
-#endif RNU_MATH_CX_FUN_HPP
+#endif //RNU_MATH_CX_FUN_HPP

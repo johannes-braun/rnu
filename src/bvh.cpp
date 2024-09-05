@@ -171,6 +171,7 @@ template <typename Stack> void check_shift_count(std::int32_t shift) {
   }
 }
 
+#ifdef RNU_BVH_HAS_GENERATOR
 [[nodiscard]] std::experimental::generator<bvh::index_type> bvh::traverse(
     std::function<std::optional<float>(aabb_t const&)> should_traverse) const {
   bool hits_primitive = false;
@@ -232,6 +233,7 @@ template <typename Stack> void check_shift_count(std::int32_t shift) {
 std::experimental::generator<bvh::index_type> bvh::traverse(ray_t const& ray) const {
   return traverse([&ray](aabb_t const& aabb) { return ray.intersect(aabb); });
 }
+#endif
 
 std::vector<aligned_node_t> const& bvh::nodes() const noexcept {
   return m_nodes;

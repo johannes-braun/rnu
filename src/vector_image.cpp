@@ -1,4 +1,5 @@
 #include <rnu/vector_image.hpp>
+#include <charconv>
 
 namespace rnu
 {
@@ -62,8 +63,9 @@ namespace rnu
               count = 0;
             }
 
-            auto result = std::from_chars(ptr, end, next_action.values[count++]);
-            ptr = result.ptr;
+            char* result_ptr = const_cast<char*>(ptr);
+            next_action.values[count++] = std::strtod(ptr, &result_ptr);
+            ptr = result_ptr;
 
             while ((!std::isalnum(*ptr) && *ptr != '-') && ptr != end)
               ++ptr;

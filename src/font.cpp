@@ -1473,7 +1473,7 @@ namespace rnu
           auto const times = reader.r_u8();
 
           if (i + times > end_points.back() + 1)
-            __debugbreak();
+            assert(false);
 
           for (int rep = 0; rep < times; ++rep)
           {

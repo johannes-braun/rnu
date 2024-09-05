@@ -115,7 +115,7 @@ namespace rnu
     scr_newa = make_u32tag("newa"),
     scr_new_tai_lue = make_u32tag("talu"),
     scr_n_ko = make_u32tag("nko "),
-    scr_nüshu = make_u32tag("nshu"),
+    scr_nshu = make_u32tag("nshu"),
     scr_nyiakeng_puachue_hmong = make_u32tag("hmnp"),
     scr_odia = make_u32tag("orya"),
     scr_odia_v2 = make_u32tag("ory2"),

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vec.hpp"
+#include <tuple>
 
 namespace rnu
 {
@@ -670,9 +671,9 @@ namespace rnu
   }
 
 #define arithmetic_matrix_assign_op(Op) \
-  arithmetic_matrix_scalar_assign_op(Op, Op=) \
+  arithmetic_matrix_scalar_assign_op(Op, Op##=) \
   arithmetic_matrix_scalar_op(Op) \
-  arithmetic_matrix_matrix_assign_op(Op=) \
+  arithmetic_matrix_matrix_assign_op(Op##=) \
   arithmetic_matrix_matrix_op(Op)
 
 #define arithmetic_matrix_op(Op) \

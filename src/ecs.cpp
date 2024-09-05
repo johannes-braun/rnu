@@ -148,7 +148,7 @@ void ecs::delete_component(id_t id, size_t index) {
   memcpy(dst, src, size);
 
   auto& components = as_entity(src->entity);
-  if (const auto it = std::find_if(std::execution::seq, components.begin(), components.end(),
+  if (const auto it = std::find_if(components.begin(), components.end(),
           [&](const auto& p) { return p.first == id && p.second == source_index; });
       it != components.end()) {
     it->second = static_cast<uint32_t>(index);
@@ -158,7 +158,7 @@ void ecs::delete_component(id_t id, size_t index) {
 
 bool ecs::remove_component_impl(entity_handle e, id_t component_id) {
   auto& components = as_entity(e);
-  if (const auto it = std::find_if(std::execution::seq, components.begin(), components.end(),
+  if (const auto it = std::find_if(components.begin(), components.end(),
           [&](const auto& p) { return p.first == component_id; });
       it != components.end()) {
     for (auto& l : _listeners)
@@ -192,7 +192,7 @@ void ecs::add_component_impl(entity_handle e, id_t component_id, const component
 
 component_base* ecs::get_component_impl(entity_handle e, std::vector<std::byte>& carr, id_t component_id) {
   auto& components = as_entity(e);
-  if (const auto it = std::find_if(std::execution::seq, components.begin(), components.end(),
+  if (const auto it = std::find_if(components.begin(), components.end(),
           [&](const auto& p) { return p.first == component_id; });
       it != components.end()) {
     return reinterpret_cast<component_base*>(&carr[it->second]);
@@ -210,7 +210,7 @@ void ecs::update_multi_system(system_base& system, duration_type delta, const st
 
   const auto min_index = [&]() -> ptrdiff_t {
     const auto d = std::distance(types.begin(),
-        std::min_element(std::execution::seq, types.begin(), types.end(), [&](const id_t& a, const id_t& b) {
+        std::min_element(types.begin(), types.end(), [&](const id_t& a, const id_t& b) {
           const auto sa = component_base::type_size(a);
           const auto sb = component_base::type_size(b);
           const auto a_opt =

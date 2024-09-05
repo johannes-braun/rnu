@@ -1,4 +1,5 @@
 #include <rnu/ecs/system.hpp>
+#include <execution>
 
 namespace rnu {
 void system_base::add_component_type(id_t id, component_flags flags) {
@@ -22,7 +23,7 @@ void system_list::add(system_base& system) {
 
 bool system_list::remove(system_base& system) {
   if (const auto it = std::find_if(
-          std::execution::par, _systems.begin(), _systems.end(), [&](auto& ref) { return &ref.get() == &system; });
+          _systems.begin(), _systems.end(), [&](auto& ref) { return &ref.get() == &system; });
       it != _systems.end()) {
     _systems.erase(it);
     return true;

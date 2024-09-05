@@ -110,7 +110,7 @@ namespace rnu
 #define vec_base_ctors_impl() \
   constexpr vec_base() = default; \
   template<typename... Ts> constexpr vec_base(Ts&&... ts) : _storage{ std::forward<Ts>(ts)... } {}\
-  template<size_t... Indices, typename T> constexpr vec_base(std::index_sequence<Indices...>, T && t) : _storage{ (Indices, std::forward<T>(t))... } {}
+  template<size_t... Indices, typename Val> constexpr vec_base(std::index_sequence<Indices...>, Val && t) : _storage{ (Indices, std::forward<T>(t))... } {}
 
   template<typename T, size_t S>
   struct vec_base {
@@ -291,7 +291,7 @@ namespace rnu
 
 #define arithmetic_op_with_assign(Op)\
     arithmetic_op(Op) \
-    assign_op(Op=)
+    assign_op(Op##=)
 
   arithmetic_op_with_assign(+);
   arithmetic_op_with_assign(*);

@@ -5,7 +5,10 @@
 #include <span>
 #include <vector>
 #include <functional>
+#if __has_include(<experimental/generator>)
+#define RNU_BVH_HAS_GENERATOR 1
 #include <experimental/generator>
+#endif
 
 namespace rnu {
 struct build_state_t;
@@ -162,9 +165,11 @@ public:
   constexpr static int min_leaf_primitives = 1;
 
   [[nodiscard]] bvh(std::span<aabb_t const> aabbs, primitive_split_func split = nullptr);
+#ifdef RNU_BVH_HAS_GENERATOR
   [[nodiscard]] std::experimental::generator<index_type> traverse(ray_t const& ray) const;
   [[nodiscard]] std::experimental::generator<index_type> traverse(
       std::function<std::optional<float>(aabb_t const&)> should_traverse) const;
+#endif
   [[nodiscard]] std::vector<aligned_node_t> const& nodes() const noexcept;
   [[nodiscard]] std::vector<index_type> const& reordered_indices() const noexcept;
   [[nodiscard]] aabb_t aabb() const noexcept;

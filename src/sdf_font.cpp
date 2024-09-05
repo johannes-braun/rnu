@@ -2,6 +2,7 @@
 #include <rnu/algorithm/skyline_packer.hpp>
 #include <algorithm>
 #include <execution>
+#include <numeric>
 
 namespace rnu
 {
@@ -76,7 +77,7 @@ namespace rnu
     image.resize(w * h);
 
     // Todo: remove with basic_thread_pool<GlyphCache> to remove thread_locals and to have more control...
-    std::for_each(std::execution::par_unseq, begin(_infos), end(_infos), [this, w, h, &image](std::pair<rnu::glyph_id, glyph_info> const& pair) {
+    std::for_each(begin(_infos), end(_infos), [this, w, h, &image](std::pair<rnu::glyph_id, glyph_info> const& pair) {
 
       auto const& [ch, info] = pair;
       auto const& [character, id, scale, db, pb/*, err*/] = info;
