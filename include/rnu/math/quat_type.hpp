@@ -190,18 +190,6 @@ namespace rnu {
     ret[3] = qa[3] * a + qb[3] * b;
     return ret;
   }
-
-  template<typename F>
-  quat_t<F> look_at(vec<F, 3> eye, vec<F, 3> center, vec<F, 3> up)
-  {
-    mat<F, 3, 3> result;
-    result[2] = -normalize(center - eye);
-    vec<F, 3> const right = cross(up, result[2]);
-    result[0] = right / std::sqrt(std::max(static_cast<F>(1e-5), dot(right, right)));
-    result[1] = cross(result[2], result[0]);
-    auto const t = transform<F>(result);
-    return t.rotation;
-  }
 }
 
 #include "quat_type.inl.hpp"
